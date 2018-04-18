@@ -1,0 +1,3 @@
+1. Check balance dataset.
+2. Apply balance to sample 10% of data for each category based on balance.
+3. Download
