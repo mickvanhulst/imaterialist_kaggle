@@ -22,7 +22,8 @@ def open_file(train=False, test=False, val=False):
 
 def prob_scores(df):
     # Count
-    length = len(df)
+    agg_classes = train_df.groupby(['label_str']).size().reset_index().rename(columns={0:'cnt'})
+    return  1 - (agg_classes['cnt'] / len(train_df))
 
 
 
@@ -36,10 +37,8 @@ if __name__ == "__main__":
     train_df["imageId"] = train_df["imageId"].astype(np.int)
     train_df['label_str'] = train_df['labelId'].apply(lambda x: ' '.join(x))
 
-    agg_classes = train_df.groupby(['label_str']).size().reset_index().rename(columns={0:'cnt'})
-    agg_classes['probs'] = 1 - (agg_classes['cnt'] / len(train_df))
-
-    print(agg_classes)
+    # TODO: for task 1 + 2
+    #train_df['probs'] = prob_scores(train_df)
 
     '''
 
