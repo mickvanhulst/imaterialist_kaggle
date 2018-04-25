@@ -54,7 +54,7 @@ def download_dataset(dataset_path, outdir, n_images=10000):
 
     # download data
     pool = multiprocessing.Pool(processes=12)
-    with tqdm(total=len(fnames_urls)) as progress_bar:
+    with tqdm(total=len(fnames_urls), desc="Loading Dataset") as progress_bar:
         for _ in pool.imap_unordered(download_image, fnames_urls):
             progress_bar.update(1)
 
