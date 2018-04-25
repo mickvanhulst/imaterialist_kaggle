@@ -23,7 +23,8 @@ def open_file(train=False, test=False, val=False):
 def prob_scores(df):
     # Count
     agg_classes = train_df.groupby(['label_str']).size().reset_index().rename(columns={0:'cnt'})
-    return  1 - (agg_classes['cnt'] / len(train_df))
+    agg_classes['probs'] = 1 - (agg_classes['cnt'] / len(train_df))
+    return agg_classes
 
 
 
@@ -38,29 +39,25 @@ if __name__ == "__main__":
     train_df['label_str'] = train_df['labelId'].apply(lambda x: ' '.join(x))
 
     # TODO: for task 1 + 2
-    #train_df['probs'] = prob_scores(train_df)
+    #agg_classes = prob_scores(train_df)
+    #train_df['probs'] = pd.merge(train_df, agg_classes[['label_str', 'probs']], how='left', on='label_str')
 
-    '''
-
-    train_df['probs'] = pd.merge(train_df, agg_classes[['label_str', 'probs']], how='left', on='label_str')
-
-    # Keras sequence to cat using apply
+    # One-hot encoding
     train_image_arr = train_df[["imageId", "labelId"]].apply(lambda x: [(x["imageId"], int(i)) for i in x["labelId"]],
-                                                             axis=1).tolist()
+                                       axis=1).tolist()
     train_image_arr = [item for sublist in train_image_arr for item in sublist]
     train_image_row = np.array([d[0] for d in train_image_arr]).astype(np.int)
     train_image_col = np.array([d[1] for d in train_image_arr]).astype(np.int)
     train_image_vals = np.ones(len(train_image_col))
 
-
-
     train_image_mat = csr_matrix((train_image_vals, (train_image_row, train_image_col)))
-
-
     labels = train_image_mat.sum(0).astype(np.int)
+
+    # Sampling
+
+
+    # Download
 
 
     ## Rows = images  //  columns classes
     df_train_image_mat = pd.DataFrame(train_image_mat.toarray())
-    '''
-
