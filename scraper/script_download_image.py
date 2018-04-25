@@ -40,22 +40,36 @@ def parse_dataset(_dataset, _outdir, _max=10000):
     :return: list of tuple containing absolute path and url of image
     """
     _fnames_urls = []
-    with open(dataset, 'r') as f:
+    with open(_dataset, 'r') as f:
         data = json.load(f)
         for image in data["images"]:
             url = image["url"]
-            fname = os.path.join(outdir, "{}.jpg".format(image["imageId"]))
+            fname = os.path.join(_outdir, "{}.jpg".format(image["imageId"]))
             _fnames_urls.append((fname, url))
     return _fnames_urls[:_max]
 
 
-if __name__ == '__main__':
-    if len(sys.argv) != 3:
+def download_dataset(dataset_path, outdir, n_images=10000):
+    if not os.path.exists(outdir):
+        os.makedirs(outdir)
+
+    # parse json dataset file
+    fnames_urls = parse_dataset(dataset_path, outdir, _max=n_images)
+
+    # download data
+    pool = multiprocessing.Pool(processes=12)
+    with tqdm(total=len(fnames_urls)) as progress_bar:
+        for _ in pool.imap_unordered(download_image, fnames_urls):
+            progress_bar.update(1)
+
+
+def main(args):
+    if len(args) != 3:
         print("error: not enough arguments")
         sys.exit(0)
 
     # get args and create output directory
-    dataset, outdir = sys.argv[1:]
+    dataset, outdir = args
     if not os.path.exists(outdir):
         os.makedirs(outdir)
 
@@ -69,3 +83,7 @@ if __name__ == '__main__':
             progress_bar.update(1)
 
     sys.exit(1)
+
+
+if __name__ == '__main__':
+    main(sys.argv)

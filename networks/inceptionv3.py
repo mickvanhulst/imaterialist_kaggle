@@ -6,49 +6,43 @@ from keras import backend as K
 
 from keras.optimizers import SGD
 
-from scraper import script_download_image
+from scraper.script_download_image import download_dataset
 
 
-
-def inception_plus():
+def inception_plus(n_outputs):
     # create the base pre-trained model
     base_model = InceptionV3(weights='imagenet', include_top=False)
 
     # add a global spatial average pooling layer
     x = base_model.output
     x = GlobalAveragePooling2D()(x)
-    # let's add a fully-connected layer
+    # Feature Layer
     x = Dense(1024, activation='relu')(x)
-    # and a logistic layer -- let's say we have 200 classes
-    predictions = Dense(200, activation='softmax')(x)
+    # Prediction layer, Probability per class
+    predictions = Dense(n_outputs, activation='softmax')(x)
 
     # this is the model we will train
     model = Model(inputs=base_model.input, outputs=predictions)
-
-
 
     # compile the model (should be done *after* setting layers to non-trainable)
     model.summary()
     return model, base_model
 
 
-def training(model, base_model):
-        # first: train only the top layers (which were randomly initialized)
+def train_model(model, base_model):
+    # first: train only the top layers (which were randomly initialized)
     # i.e. freeze all convolutional InceptionV3 layers
-    
     for layer in model.layers[:-2]:
         layer.trainable = False
     model.compile(optimizer='rmsprop', loss='categorical_crossentropy')
 
-    # train the model on the new data for a few epochs
-    model.fit_generator()
+    # TODO: train the model on the new data for a few epochs
+    # model.fit_generator()
 
-    # at this point, the top layers are well trained and we can start fine-tuning
-    # convolutional layers from inception V3. We will freeze the bottom N layers
-    # and train the remaining top layers.
+    # second: fine-tuning convolutional layers from inception V3. Freeze
+    # the bottom N layers and train the remaining top layers.
 
-    # let's visualize layer names and layer indices to see how many layers
-    # we should freeze:
+    # Visualize layer names and indices to see how many layers we should freeze:
     for i, layer in enumerate(base_model.layers):
         print(i, layer.name)
 
@@ -63,12 +57,14 @@ def training(model, base_model):
     # we use SGD with a low learning rate
     model.compile(optimizer=SGD(lr=0.0001, momentum=0.9), loss='categorical_crossentropy')
 
-    # we train our model again (this time fine-tuning the top 2 inception blocks
-    # alongside the top Dense layers
-    # model.fit_generator(...)
+    # TODO: train the model again (this time fine-tuning the top 2 inception blocks alongside the top Dense layers
+    # model.fit_generator()
+
+    return model
+
 
 if __name__ == "__main__":
-    script_download_image.parse_dataset('../data/train.json', '../data/img')
+    download_dataset('../data/train.json', '../data/img', 1000)
 
-    model, base_model = inception_plus()
-    training(model, base_model)
+    model, base_model = inception_plus(100)
+    train_model(model, base_model)
