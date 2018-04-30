@@ -8,14 +8,16 @@ from urllib3.util import Retry
 import urllib3
 import io
 import cv2
+from keras.preprocessing.image import ImageDataGenerator, Iterator
+
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
-class DataGenerator(keras.utils.Sequence):
+class DataGenerator(Iterator):
     'Generates data for Keras'
     def __init__(self,datafile, batch_size=64, dim=(128,128), n_channels=3,
-                 n_classes=10, shuffle=True):
+                 n_classes=228, shuffle=True):
         'Initialization'
         self.batch_size = batch_size
         self.dim = dim
@@ -36,10 +38,14 @@ class DataGenerator(keras.utils.Sequence):
         # Shape of train_df ['imageId', 'url', 'labelId'], shape: (1014544, 3)
         self.train_df = train_df
 
+    def __len__(self):
+        'Denotes the number of batches per epoch'
+
+        print("len self" , int(np.floor(len(self.train_df) / self.batch_size)))
+        return int(np.floor(len(self.train_df) / self.batch_size))
 
 
-
-    def __getitem__(self):
+    def next(self):
         'Generate one batch of data'
         # Generate indexes of the batch
         # indexes = self.indexes[index * self.batch_size:(index + 1) * self.batch_size]
@@ -83,13 +89,23 @@ class DataGenerator(keras.utils.Sequence):
 
         # Generate data
         for i, ID in enumerate(list_IDs_temp):
-            row = self.train_df.loc[self.train_df['imageId'] == ID]
+            row = self.train_df.loc[self.train_df['imageId'] == int(ID[0])]
             url = row['url'].values
             labels = row['labelId'].values
 
             # Store label and class
             X[i,] = self.download_image(url)
-            y[i] = labels
+            y[i] = labels[0][0]
 
         return X, keras.utils.to_categorical(y, num_classes=self.n_classes)
 
+training_gen = DataGenerator(
+    datafile='../data/train.json'
+)
+
+
+for X, y in training_gen:
+    print(X.shape)
+    print(y.shape)
+    # plot_image(batch_x, images_per_row=8)
+    break
