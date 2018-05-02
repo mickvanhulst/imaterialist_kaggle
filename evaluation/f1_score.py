@@ -5,6 +5,7 @@ from sklearn.metrics import f1_score
 class micro_averaged_f1(Callback):
     def __init__(self, test_data):
         self.test_data = test_data
+        self.f1_score = []
 
     def on_train_begin(self, logs={}):
         self.test = 0
@@ -21,6 +22,5 @@ class micro_averaged_f1(Callback):
         y_pred = self.model.predict(x)
         y_pred[y_pred > 0.5] = 1
         y_pred[y_pred <= 0.5] = 0
-
+        self.f1_score.append(f1_score(self.test_data[1], y_pred, average='micro'))
         print(f1_score(self.test_data[1], y_pred, average='micro'))
-        
