@@ -2,8 +2,9 @@ from keras.callbacks import Callback
 from sklearn.metrics import f1_score
 
 
-class micro_averaged_f1(Callback):
+class MicroAveragedF1(Callback):
     def __init__(self, test_data):
+        super().__init__()
         self.test_data = test_data
         self.f1_score = []
 
