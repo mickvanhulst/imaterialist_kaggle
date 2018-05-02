@@ -10,7 +10,7 @@ def set_callbacks(new_callbacks):
 
 def train_top(generator_train, generator_val, model, base_model,
               steps_per_epoch=None, epochs=5, verbose=1,
-              optimizer='rmsprop'):
+              optimizer='rmsprop', val_percentage=0.5):
     """
     Trains the top layers of a specified model by freezing ALL base_model layers
     :param generator_train:
@@ -21,7 +21,7 @@ def train_top(generator_train, generator_val, model, base_model,
     :param epochs
     :param verbose
     :param optimizer: default rmsprop
-    :param callbacks
+    :param val_percentage percentage of the validation set used per epoch
     :return: history
     """
     if steps_per_epoch is None:
@@ -32,14 +32,14 @@ def train_top(generator_train, generator_val, model, base_model,
         layer.trainable = False if idx_layer < len(base_model.layers) else True
 
     # compile the model (should be done *after* setting layers to non-trainable)
-    model.compile(optimizer=optimizer, loss='categorical_crossentropy')
+    model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
 
     history = model.fit_generator(generator=generator_train,
                                   steps_per_epoch=steps_per_epoch,
                                   epochs=epochs,
                                   verbose=verbose,
                                   validation_data=generator_val,
-                                  validation_steps=2,
+                                  validation_steps=int(len(generator_val)*val_percentage),
                                   callbacks=callbacks
                                   )
     return history
@@ -47,7 +47,7 @@ def train_top(generator_train, generator_val, model, base_model,
 
 def train_full(generator_train, generator_val, model,
                steps_per_epoch=None, epochs=5, verbose=1,
-               optimizer='rmsprop'):
+               optimizer='rmsprop', val_percentage=0.5):
     """
     Train the full model; unfreeze all layers
     :param generator_train:
@@ -57,7 +57,7 @@ def train_full(generator_train, generator_val, model,
     :param epochs
     :param verbose
     :param optimizer: default rmsprop
-    :param callbacks
+    :param val_percentage percentage of the validation set used per epoch
     :return: history
     """
     if steps_per_epoch is None:
@@ -67,14 +67,14 @@ def train_full(generator_train, generator_val, model,
         layer.trainable = True
 
     # compile the model (should be done *after* setting layers to non-trainable)
-    model.compile(optimizer=optimizer, loss='categorical_crossentropy')
+    model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
 
     history = model.fit_generator(generator=generator_train,
                                   steps_per_epoch=steps_per_epoch,
                                   epochs=epochs,
                                   verbose=verbose,
                                   validation_data=generator_val,
-                                  validation_steps=2,
+                                  validation_steps=int(len(generator_val)*val_percentage),
                                   callbacks=callbacks
                                   )
     return history
@@ -82,7 +82,7 @@ def train_full(generator_train, generator_val, model,
 
 def fine_tune(generator_train, generator_val, model, idx_lower,
               steps_per_epoch=None, epochs=5, verbose=1,
-              optimizer=SGD(lr=0.0001, momentum=0.9)):
+              optimizer=SGD(lr=0.0001, momentum=0.9), val_percentage=0.5):
     """
     Fine-tune the model; freeze idx_lower first layers and train
     :param generator_train:
@@ -93,7 +93,7 @@ def fine_tune(generator_train, generator_val, model, idx_lower,
     :param epochs
     :param verbose
     :param optimizer: default SGD
-    :param callbacks
+    :param val_percentage percentage of the validation set used per epoch
     :return: history
     """
     if not 0 < idx_lower < len(model.layers):
@@ -115,7 +115,7 @@ def fine_tune(generator_train, generator_val, model, idx_lower,
                                   epochs=epochs,
                                   verbose=verbose,
                                   validation_data=generator_val,
-                                  validation_steps=2,
+                                  validation_steps=int(len(generator_val)*val_percentage),
                                   callbacks=callbacks
                                   )
     return history

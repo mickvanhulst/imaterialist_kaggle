@@ -12,10 +12,14 @@ def main():
     training_generator = DataGenerator(datafile='./data/train.json')
     validation_generator = DataGenerator(datafile='./data/validation.json')
 
+    print("Training batches:", len(training_generator))
+    print("Validation batches:", len(validation_generator))
+
     training.set_callbacks(get_callbacks("inception_v3", None))
 
     history = training.train_top(generator_train=training_generator, generator_val=validation_generator,
-                                 model=model, base_model=base_model)
+                                 model=model, base_model=base_model,
+                                 steps_per_epoch=50, val_percentage=0.05)
 
 
 if __name__ == "__main__":
