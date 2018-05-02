@@ -9,7 +9,7 @@ def set_callbacks(new_callbacks):
 
 
 def train_top(generator_train, generator_val, model, base_model,
-              steps_per_epoch=32, epochs=5, verbose=1,
+              steps_per_epoch=None, epochs=5, verbose=1,
               optimizer='rmsprop'):
     """
     Trains the top layers of a specified model by freezing ALL base_model layers
@@ -24,6 +24,9 @@ def train_top(generator_train, generator_val, model, base_model,
     :param callbacks
     :return: history
     """
+    if steps_per_epoch is None:
+        steps_per_epoch = len(generator_train)
+
     # Freeze all base layers
     for idx_layer, layer in enumerate(model.layers):
         layer.trainable = False if idx_layer < len(base_model.layers) else True
@@ -43,7 +46,7 @@ def train_top(generator_train, generator_val, model, base_model,
 
 
 def train_full(generator_train, generator_val, model,
-               steps_per_epoch=32, epochs=5, verbose=1,
+               steps_per_epoch=None, epochs=5, verbose=1,
                optimizer='rmsprop'):
     """
     Train the full model; unfreeze all layers
@@ -57,6 +60,9 @@ def train_full(generator_train, generator_val, model,
     :param callbacks
     :return: history
     """
+    if steps_per_epoch is None:
+        steps_per_epoch = len(generator_train)
+
     for layer in model.layers:
         layer.trainable = True
 
@@ -75,7 +81,7 @@ def train_full(generator_train, generator_val, model,
 
 
 def fine_tune(generator_train, generator_val, model, idx_lower,
-              steps_per_epoch=32, epochs=5, verbose=1,
+              steps_per_epoch=None, epochs=5, verbose=1,
               optimizer=SGD(lr=0.0001, momentum=0.9)):
     """
     Fine-tune the model; freeze idx_lower first layers and train
@@ -93,13 +99,16 @@ def fine_tune(generator_train, generator_val, model, idx_lower,
     if not 0 < idx_lower < len(model.layers):
         raise Exception("idx should be lower than the number of layers")
 
+    if steps_per_epoch is None:
+        steps_per_epoch = len(generator_train)
+
     for layer in model.layers[:idx_lower]:
         layer.trainable = False
     for layer in model.layers[idx_lower:]:
         layer.trainable = True
 
     # Recompile the model for these modifications to take effect
-    model.compile(optimizer=optimizer, loss='categorical_crossentropy')
+    model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
 
     history = model.fit_generator(generator=generator_train,
                                   steps_per_epoch=steps_per_epoch,
