@@ -1,11 +1,13 @@
 from keras.callbacks import Callback
 from sklearn.metrics import f1_score
+from IPython.display import clear_output
+import matplotlib.pyplot as plt
+from matplotlib.pylab import ion
 
 
-class MicroAveragedF1(Callback):
-    def __init__(self, test_data):
-        super().__init__()
-        self.test_data = test_data
+class micro_averaged_f1(Callback):
+    def __init__(self, validation_generator):
+        self.val_gen = validation_generator
         self.f1_score = []
 
     def on_train_begin(self, logs={}):
@@ -15,13 +17,27 @@ class MicroAveragedF1(Callback):
         self.tp = 0
         self.tn = 0
 
-    def on_batch_end(self, batch, logs={}):
-        self.test += 5
 
     def on_epoch_end(self, epoch, logs={}):
-        x, y = self.test_data
+        x = []
+        y = []
+        for i in range(0, 5):
+            n_x, n_y = self.val_gen.next()
+            x.extend(n_x)
+            y.extend(n_y)
         y_pred = self.model.predict(x)
         y_pred[y_pred > 0.5] = 1
         y_pred[y_pred <= 0.5] = 0
-        self.f1_score.append(f1_score(self.test_data[1], y_pred, average='micro'))
-        print(f1_score(self.test_data[1], y_pred, average='micro'))
+        score = f1_score(self.test_data[1], y_pred, average='micro')
+        self.f1_score.append(score)
+        print(score)
+
+    def on_train_end(self, logs={}):
+        self.plot()
+
+    def plot(self):
+        clear_output()
+        N = len(self.f1_score)
+        plt.plot(range(0, N), self.f1_score)
+        plt.legend('micro F1-score')
+        plt.show()

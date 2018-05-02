@@ -25,6 +25,6 @@ model.compile(loss='binary_crossentropy',
 print(model.summary())
 model.fit(X_train, y_train,
           batch_size=batch_size,
-          epochs=2,
+          epochs=10,
           callbacks=[f1_score.micro_averaged_f1((X_test, y_test))],
           validation_data=(X_test, y_test))
