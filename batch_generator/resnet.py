@@ -1,6 +1,6 @@
 import keras.layers
 from keras.applications.imagenet_utils import preprocess_input
-from batch_generator import batch_gen_concept
+from batch_generator import batch_gen
 from keras import layers
 from keras.models import Model
 from keras.optimizers import SGD, RMSprop
@@ -86,21 +86,21 @@ def create_callbacks():
     return callback_list
 
 
-def test():
+def main():
 
 
     model = resnet_50()
     model.summary()
 
-    training_generator_dummy = batch_gen_concept.MultiLabelGenerator(preprocessing_function=resnet_50,
-                                                                     horizontal_flip=True)
-    validation_generator_dummy = batch_gen_concept.MultiLabelGenerator(preprocessing_function=resnet_50)
+    training_generator_dummy = batch_gen.MultiLabelGenerator(preprocessing_function=resnet_50,
+                                                             horizontal_flip=True)
+    validation_generator_dummy = batch_gen.MultiLabelGenerator(preprocessing_function=resnet_50)
 
     training_generator = training_generator_dummy.make_datagenerator(datafile='../data/train.json')
     validation_generator = validation_generator_dummy.make_datagenerator(datafile='../data/validation.json')
 
 
-    model.load_weights('./best_model1.h5')
+    # model.load_weights('./best_model1.h5')
     model.compile(optimizer=SGD(lr=0.02), loss='binary_crossentropy', metrics=['accuracy'])
     calls = create_callbacks()
     history = model.fit_generator(generator = training_generator,
@@ -118,5 +118,6 @@ def test():
     # for i in range(10):
     #     print(np.flatnonzero(y_predict[i]))
 
+
 if __name__ == "__main__":
-    test()
+    main()
