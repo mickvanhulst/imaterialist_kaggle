@@ -18,8 +18,7 @@ class MultiLabelGenerator(ImageDataGenerator):
         super(MultiLabelGenerator, self).__init__(*args, **kwargs)
 
     def make_datagenerator(self, datafile, batch_size=32, dim=(224, 224), n_channels=3, n=None,
-                             n_classes=228, seed=None, total_batches_seen=0, index_array=None, shuffle=True,
-                             ):
+                           n_classes=228, seed=None, total_batches_seen=0, index_array=None, shuffle=True):
 
         return DataGenerator(datafile, batch_size, dim, n_channels, n,
                              n_classes, seed,total_batches_seen, index_array, shuffle)
@@ -29,8 +28,7 @@ class DataGenerator(Iterator):
     'Generates data for Keras'
 
     def __init__(self, datafile, batch_size=32, dim=(224, 224), n_channels=3, n=None,
-                 n_classes=228, seed=None, total_batches_seen=0, index_array=None, shuffle=True,
-                 ):
+                 n_classes=228, seed=None, total_batches_seen=0, index_array=None, shuffle=True):
         'Initialization'
         self.n = 0
         self.total_batches_seen = total_batches_seen
@@ -104,7 +102,7 @@ class DataGenerator(Iterator):
         'Generates data containing batch_size samples'  # X : (n_samples, *dim, n_channels)
         # Initialization
         X = np.empty((self.batch_size, *self.dim, self.n_channels))
-        y = np.empty((self.batch_size), dtype=int)
+        y = np.empty(self.batch_size, dtype=int)
 
         # Generate data
         for i, ID in enumerate(list_IDs_temp):

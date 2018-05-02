@@ -1,13 +1,20 @@
 from keras.optimizers import SGD
 
 
-def train_top(generator, model, base_model, optimizer='rmsprop'):
+def train_top(generator_train, generator_val, model, base_model,
+              steps_per_epoch=32, epochs=5, verbose=1,
+              optimizer='rmsprop', callbacks=None):
     """
     Trains the top layers of a specified model by freezing ALL base_model layers
-    :param generator
+    :param generator_train:
+    :param generator_val:
     :param model: full model
     :param base_model: base_model
-    :param optimizer
+    :param steps_per_epoch
+    :param epochs
+    :param verbose
+    :param optimizer: default rmsprop
+    :param callbacks
     :return: history
     """
     # Freeze all base layers
@@ -17,18 +24,30 @@ def train_top(generator, model, base_model, optimizer='rmsprop'):
     # compile the model (should be done *after* setting layers to non-trainable)
     model.compile(optimizer=optimizer, loss='categorical_crossentropy')
 
-    # TODO: train the model on the new data for a few epochs
-    history = None  # model.fit_generator()
-
+    history = model.fit_generator(generator=generator_train,
+                                  steps_per_epoch=steps_per_epoch,
+                                  epochs=epochs,
+                                  verbose=verbose,
+                                  validation_data=generator_val,
+                                  validation_steps=2,
+                                  callbacks=callbacks
+                                  )
     return history
 
 
-def train_full(generator, model, optimizer='rmsprop'):
+def train_full(generator_train, generator_val, model,
+               steps_per_epoch=32, epochs=5, verbose=1,
+               optimizer='rmsprop', callbacks=None):
     """
     Train the full model; unfreeze all layers
-    :param generator:
+    :param generator_train:
+    :param generator_val:
     :param model:
-    :param optimizer: optimizer to be used
+    :param steps_per_epoch
+    :param epochs
+    :param verbose
+    :param optimizer: default rmsprop
+    :param callbacks
     :return: history
     """
     for layer in model.layers:
@@ -37,19 +56,31 @@ def train_full(generator, model, optimizer='rmsprop'):
     # compile the model (should be done *after* setting layers to non-trainable)
     model.compile(optimizer=optimizer, loss='categorical_crossentropy')
 
-    # TODO: training
-    history = None  # model.fit_generator()
-
+    history = model.fit_generator(generator=generator_train,
+                                  steps_per_epoch=steps_per_epoch,
+                                  epochs=epochs,
+                                  verbose=verbose,
+                                  validation_data=generator_val,
+                                  validation_steps=2,
+                                  callbacks=callbacks
+                                  )
     return history
 
 
-def fine_tune(generator, model, idx_lower, optimizer=SGD(lr=0.0001, momentum=0.9)):
+def fine_tune(generator_train, generator_val, model, idx_lower,
+              steps_per_epoch=32, epochs=5, verbose=1,
+              optimizer=SGD(lr=0.0001, momentum=0.9), callbacks=None):
     """
     Fine-tune the model; freeze idx_lower first layers and train
-    :param generator:
+    :param generator_train:
+    :param generator_val:
     :param model:
     :param idx_lower: index of the last layer that has to be frozen
+    :param steps_per_epoch
+    :param epochs
+    :param verbose
     :param optimizer: default SGD
+    :param callbacks
     :return: history
     """
     if not 0 < idx_lower < len(model.layers):
@@ -63,7 +94,12 @@ def fine_tune(generator, model, idx_lower, optimizer=SGD(lr=0.0001, momentum=0.9
     # Recompile the model for these modifications to take effect
     model.compile(optimizer=optimizer, loss='categorical_crossentropy')
 
-    # TODO: train the model again
-    history = None  # model.fit_generator()
-
+    history = model.fit_generator(generator=generator_train,
+                                  steps_per_epoch=steps_per_epoch,
+                                  epochs=epochs,
+                                  verbose=verbose,
+                                  validation_data=generator_val,
+                                  validation_steps=2,
+                                  callbacks=callbacks
+                                  )
     return history
