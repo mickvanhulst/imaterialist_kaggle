@@ -4,6 +4,7 @@ callbacks = None
 
 
 def set_callbacks(new_callbacks):
+    global callbacks
     callbacks = new_callbacks
 
 
