@@ -1,6 +1,7 @@
 from batch_generator.batch_gen import DataGenerator
 from networks.inceptionv3 import inception_v3_model
 from networks import training
+from evaluation.callbacks import get_callbacks
 
 
 def main():
@@ -10,6 +11,8 @@ def main():
     print("Creating Data Generators...")
     training_generator = DataGenerator(datafile='./data/train.json')
     validation_generator = DataGenerator(datafile='./data/validation.json')
+
+    training.set_callbacks(get_callbacks("inception_v3", None))
 
     history = training.train_top(generator_train=training_generator, generator_val=validation_generator,
                                  model=model, base_model=base_model)
