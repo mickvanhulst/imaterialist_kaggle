@@ -17,5 +17,6 @@ def get_callbacks(model_name, test_data):
                       mode='min',
                       verbose=1),
 
-        MicroAveragedF1(test_data)
+        # TODO: How do we get the test_data?
+        # MicroAveragedF1(test_data)
     ]
