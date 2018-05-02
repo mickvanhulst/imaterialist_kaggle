@@ -1,4 +1,3 @@
-from keras.applications.inception_v3 import InceptionV3
 from keras.models import Model
 from keras.layers import Conv2D, Dense, MaxPooling2D, GlobalAveragePooling2D
 from networks.training import train_full

@@ -51,7 +51,7 @@ def test():
 
     # TODO: replace None with generator
     train_top(None, model, base_model)
-    # we chose to train the top 2 inception blocks, i.e. we will freeze the first 249 layers
+    # train the top 2 inception blocks, i.e. we will freeze the first 249 layers
     fine_tune(None, model, idx_lower=249)
 
 
