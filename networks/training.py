@@ -1,9 +1,15 @@
 from keras.optimizers import SGD
 
+callbacks = None
+
+
+def set_callbacks(new_callbacks):
+    callbacks = new_callbacks
+
 
 def train_top(generator_train, generator_val, model, base_model,
               steps_per_epoch=32, epochs=5, verbose=1,
-              optimizer='rmsprop', callbacks=None):
+              optimizer='rmsprop'):
     """
     Trains the top layers of a specified model by freezing ALL base_model layers
     :param generator_train:
@@ -37,7 +43,7 @@ def train_top(generator_train, generator_val, model, base_model,
 
 def train_full(generator_train, generator_val, model,
                steps_per_epoch=32, epochs=5, verbose=1,
-               optimizer='rmsprop', callbacks=None):
+               optimizer='rmsprop'):
     """
     Train the full model; unfreeze all layers
     :param generator_train:
@@ -69,7 +75,7 @@ def train_full(generator_train, generator_val, model,
 
 def fine_tune(generator_train, generator_val, model, idx_lower,
               steps_per_epoch=32, epochs=5, verbose=1,
-              optimizer=SGD(lr=0.0001, momentum=0.9), callbacks=None):
+              optimizer=SGD(lr=0.0001, momentum=0.9)):
     """
     Fine-tune the model; freeze idx_lower first layers and train
     :param generator_train:
