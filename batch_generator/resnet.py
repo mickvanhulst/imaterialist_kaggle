@@ -7,32 +7,9 @@ from keras.optimizers import SGD, RMSprop
 from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 from keras.layers import Flatten, Dense, Dropout
 import numpy as np
+from sklearn import metrics
 
 
-def build_model():
-    # (x, y, c)
-    tensor_input = layers.Input(shape=(224, 224, 3))
-    h = layers.Conv2D(64, kernel_size=3, strides=(1, 1), padding='same', activation='relu',
-                      kernel_initializer='he_normal')(tensor_input)
-    h = layers.MaxPooling2D(pool_size=(2, 2))(h)
-    h = layers.Conv2D(128, kernel_size=3, strides=(1, 1), padding='same', activation='relu',
-                      kernel_initializer='he_normal')(h)
-    h = layers.MaxPooling2D(pool_size=(2, 2))(h)
-    h = layers.Conv2D(128, kernel_size=3, strides=(1, 1), padding='same', activation='relu',
-                      kernel_initializer='he_normal')(h)
-    h = layers.MaxPooling2D(pool_size=(2, 2))(h)
-    h = layers.Conv2D(256, kernel_size=3, strides=(1, 1), padding='same', activation='relu',
-                      kernel_initializer='he_normal')(h)
-
-    h = layers.Flatten()(h)
-    h = layers.Dense(32, activation='relu', kernel_initializer='he_normal')(h)
-    h = layers.Dropout(0.25)(h)
-    # (classes)
-    tensor = layers.Dense(228, activation='sigmoid')(h)
-
-    model = Model(inputs=tensor_input, outputs=tensor)
-    model.compile(optimizer=SGD(lr=0.02), loss='binary_crossentropy', metrics=['accuracy'])
-    return model
 
 
 def resnet_50():
@@ -90,7 +67,7 @@ def main():
 
 
     model = resnet_50()
-    model.summary()
+    # model.summary()
 
     training_generator_dummy = batch_gen.MultiLabelGenerator(preprocessing_function=resnet_50,
                                                              horizontal_flip=True)
@@ -101,23 +78,41 @@ def main():
 
 
     # model.load_weights('./best_model1.h5')
-    model.compile(optimizer=SGD(lr=0.02), loss='binary_crossentropy', metrics=['accuracy'])
+    model.compile(optimizer=SGD(lr=0.01), loss='binary_crossentropy', metrics=['accuracy'])
     calls = create_callbacks()
-    history = model.fit_generator(generator = training_generator,
-                                  steps_per_epoch  = 32,
-                                  epochs           = 5,
-                                  verbose          = 1,
-                                  validation_data  = validation_generator,
-                                  validation_steps = 2,
-                                  callbacks        = calls
-                                  )
-
-    # y_predict = model.predict_generator(validation_generator, steps = 10)
+    # history = model.fit_generator(generator = training_generator,
+    #                               steps_per_epoch  = 32,
+    #                               epochs           = 5,
+    #                               verbose          = 1,
+    #                               validation_data  = validation_generator,
+    #                               validation_steps = 2,
+    #                               callbacks        = calls
+    #                               )
     #
-    #
-    # for i in range(10):
-    #     print(np.flatnonzero(y_predict[i]))
 
+    # for batch_x, batch_y in(training_generator):
+    #     y_predict = model.predict(batch_x)
+    #     y_predict = np.subtract(1,y_predict)
+    #
+    #     log_loss = metrics.log_loss(batch_y, y_predict)
+    #     print(" log loss : " ,log_loss)
+
+
+
+    #
+    # y_predict = model.predict(batch_x)
+    #
+    # log_loss = metrics.log_loss(batch_y, y_predict)
+    # print(log_loss)
+    # # #
+    # #
+    # # # print(y_predict)
+    # # # y_predict = y_predict[y_predict > 0.2]
+    # # #
+    # for i in range(2):
+    #     print((y_predict[i]))
+    #     print(batch_y[i])
+    #     print("geile opmaak ----")
 
 if __name__ == "__main__":
     main()
