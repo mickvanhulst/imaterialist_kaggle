@@ -8,7 +8,9 @@ import urllib3
 import io
 import cv2
 from keras.preprocessing.image import ImageDataGenerator, Iterator
-
+import matplotlib.pyplot as plt
+import keras.backend as K
+from PIL import Image
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -20,14 +22,14 @@ class MultiLabelGenerator(ImageDataGenerator):
     def make_datagenerator(self, datafile, batch_size=32, dim=(224, 224), n_channels=3, n=None,
                            n_classes=228, seed=None, total_batches_seen=0, index_array=None, shuffle=True):
 
-        return DataGenerator(datafile, batch_size, dim, n_channels, n,
+        return DataGenerator(self, datafile, batch_size, dim, n_channels, n,
                              n_classes, seed,total_batches_seen, index_array, shuffle)
 
 
 class DataGenerator(Iterator):
     'Generates data for Keras'
 
-    def __init__(self, datafile, batch_size=32, dim=(224, 224), n_channels=3, n=None,
+    def __init__(self,image_data_generator, datafile, batch_size=32, dim=(224, 224), n_channels=3, n=None,
                  n_classes=228, seed=None, total_batches_seen=0, index_array=None, shuffle=True):
         'Initialization'
         self.n = 0
@@ -35,6 +37,8 @@ class DataGenerator(Iterator):
         self.seed = seed
         self.index_array = index_array
         self.shuffle = True
+        self.image_data_generator = image_data_generator
+
 
         self.batch_size = batch_size
         self.dim = dim
@@ -61,18 +65,10 @@ class DataGenerator(Iterator):
 
     def __len__(self):
         'Denotes the number of batches per epoch'
-
-        # print("len self" , int(np.floor(len(self.train_df) / self.batch_size)))
         return int(np.floor(len(self.train_df) / self.batch_size))
 
     def next(self):
         'Generate one batch of data'
-        # Generate indexes of the batch
-        # indexes = self.indexes[index * self.batch_size:(index + 1) * self.batch_size]
-        #
-        # # Find list of IDs
-        # list_IDs_temp = [self.list_IDs[k] for k in indexes]
-
         with self.lock:
             index_array = next(self.index_generator)
 
@@ -83,26 +79,27 @@ class DataGenerator(Iterator):
         download image from url and reshapes it to dimension size e.g (128x128)
         :returns np array of image dimension
         """
-        # print('url' , url)
         http = urllib3.PoolManager(retries=Retry(connect=3, read=2, redirect=3))
         response = http.request("GET", url[0])
         image = Image.open(io.BytesIO(response.data))
         image_rgb = image.convert("RGB")
-        image_rgb = np.asarray(image_rgb)
+        resize_img = image_rgb.resize(self.dim)
+        image_numpy = np.asarray(resize_img, dtype=K.floatx())
 
-        resize_img = cv2.resize(image_rgb, self.dim)
-        # print("resize image shape", resize_img.shape)
-        # plt.imshow(resize_img)
-        # plt.show()
 
-        return resize_img
+        return image_numpy
+
+    def _labels_to_array(self, labels):
+        labels_array = np.zeros(self.n_classes)
+        labels_array[labels] = 1
+        return labels_array
 
     # Input list_IDs_temp imageIDs list of size == self.batch_size
     def _get_batches_of_transformed_samples(self, list_IDs_temp):
         'Generates data containing batch_size samples'  # X : (n_samples, *dim, n_channels)
         # Initialization
-        X = np.empty((self.batch_size, *self.dim, self.n_channels))
-        y = np.empty(self.batch_size, dtype=int)
+        X = np.empty((self.batch_size, *self.dim, self.n_channels),dtype=K.floatx())
+        y = np.empty((self.batch_size,self.n_classes), dtype = np.int)
 
         # Generate data
         for i, ID in enumerate(list_IDs_temp):
@@ -110,14 +107,33 @@ class DataGenerator(Iterator):
             url = row['url'].values
             labels = row['labelId'].values
 
+
+            labels = np.asarray(labels)
+            labels = np.subtract(labels[0],1)
+
+
+            image = self.download_image(url)
+            image = self.image_data_generator.random_transform(image)
+            image = self.image_data_generator.standardize(image)
+
+
+
+            X[i,] = image
+
             # Store label and class
-            X[i,] = self.download_image(url)
-            y[i] = labels[0][0]
+            y[i,] = self._labels_to_array(labels)
 
-        return X, keras.utils.to_categorical(y, num_classes=self.n_classes)
 
-# training_gen =  DataGenerator(datafile='../data/train.json')
+
+        # plt.show()
+        return X, y
+
+# training_gen =  MultiLabelGenerator(datafile='../data/train.json')
 #
-# for batch_x, batch_y in training_gen:
+# training_generator_dummy = MultiLabelGenerator(horizontal_flip=True)
+#
+# training_generator = training_generator_dummy.make_datagenerator(datafile='../data/train.json')
+#
+# # for batch_x, batch_y in training_generator:
 #     print(batch_x.shape)
 #     print(batch_y.shape)
