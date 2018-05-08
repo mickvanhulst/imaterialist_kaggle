@@ -32,7 +32,7 @@ class DataGenerator(Iterator):
         self.total_batches_seen = total_batches_seen
         self.seed = seed
         self.index_array = index_array
-        self.shuffle = True
+        self.shuffle = shuffle
         self.image_data_generator = image_data_generator
 
         self.batch_size = batch_size
