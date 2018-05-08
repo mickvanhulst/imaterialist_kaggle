@@ -59,7 +59,7 @@ def create_callbacks(val_gen):
                                verbose=1)
 
     callback_list = [
-    checkpoint, early_stop, f1_score.micro_averaged_f1(val_gen)
+    checkpoint, early_stop, f1_score.MicroAveragedF1(val_gen)
     ]
     return callback_list
 
