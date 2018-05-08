@@ -17,18 +17,19 @@ class MultiLabelGenerator(ImageDataGenerator):
         super(MultiLabelGenerator, self).__init__(*args, **kwargs)
 
     def make_datagenerator(self, datafile, batch_size=32, dim=(224, 224), n_channels=3,
-                           n_classes=228, seed=None, total_batches_seen=0, index_array=None, shuffle=True):
+                           n_classes=228, seed=None, total_batches_seen=0, index_array=None, shuffle=True, test=False):
         return DataGenerator(self, datafile, batch_size, dim, n_channels,
-                             n_classes, seed, total_batches_seen, index_array, shuffle)
+                             n_classes, seed, total_batches_seen, index_array, shuffle, test)
 
 
 class DataGenerator(Iterator):
     'Generates data for Keras'
 
     def __init__(self, image_data_generator, datafile, batch_size=32, dim=(224, 224), n_channels=3,
-                 n_classes=228, seed=None, total_batches_seen=0, index_array=None, shuffle=True):
+                 n_classes=228, seed=None, total_batches_seen=0, index_array=None, shuffle=True, test=False):
         'Initialization'
         self.n = 0
+        self.test = test
         self.total_batches_seen = total_batches_seen
         self.seed = seed
         self.index_array = index_array
@@ -45,10 +46,14 @@ class DataGenerator(Iterator):
             train_data = json.load(f)
 
         train_imgs_df = pd.DataFrame.from_records(train_data["images"])
-        train_labels_df = pd.DataFrame.from_records(train_data["annotations"])
-        train_labels_df["labelId"] = train_labels_df["labelId"].apply(lambda x: [int(i) for i in x])
-        train_df = pd.merge(train_imgs_df, train_labels_df, on="imageId", how="outer")
-        train_df['imageId'] = train_df['imageId'].apply(lambda x: int(x))
+
+        if not test:
+            train_labels_df = pd.DataFrame.from_records(train_data["annotations"])
+            train_labels_df["labelId"] = train_labels_df["labelId"].apply(lambda x: [int(i) for i in x])
+            train_df = pd.merge(train_imgs_df, train_labels_df, on="imageId", how="outer")
+            train_df['imageId'] = train_df['imageId'].apply(lambda x: int(x))
+        else:
+            train_df = train_imgs_df
 
         # Shape of train_df ['imageId', 'url', 'labelId'], shape: (1014544, 3)
         self.train_df = train_df
@@ -93,28 +98,35 @@ class DataGenerator(Iterator):
         'Generates data containing batch_size samples'  # X : (n_samples, *dim, n_channels)
         # Initialization
         X = np.empty((self.batch_size, *self.dim, self.n_channels), dtype=K.floatx())
-        y = np.empty((self.batch_size, self.n_classes), dtype=np.int)
+
+        if not self.test:
+            y = np.empty((self.batch_size, self.n_classes), dtype=np.int)
 
         # Generate data
         for i, ID in enumerate(list_IDs_temp):
             row = self.train_df.loc[self.train_df['imageId'] == int(ID)]
             url = row['url'].values
-            labels = row['labelId'].values
 
-            labels = np.asarray(labels)
-            labels = np.subtract(labels[0], 1)
+            if not self.test:
+                labels = row['labelId'].values
+
+                labels = np.asarray(labels)
+                labels = np.subtract(labels[0], 1)
 
             image = self.download_image(url)
-            image = self.image_data_generator.random_transform(image)
-            image = self.image_data_generator.standardize(image)
+            # image = self.image_data_generator.random_transform(image)
+            # image = self.image_data_generator.standardize(image)
 
             X[i,] = image
 
-            # Store label and class
-            y[i,] = self._labels_to_array(labels)
+            if not self.test:
+                # Store label and class
+                y[i,] = self._labels_to_array(labels)
 
-        # plt.show()
-        return X, y
+        if not self.test:
+            return X, y
+        else:
+            return X
 
 # training_gen =  MultiLabelGenerator(datafile='../data/train.json')
 #
