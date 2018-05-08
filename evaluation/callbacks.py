@@ -12,7 +12,7 @@ def get_callbacks(model_name, test_generator):
                         period=1),
 
         ReduceLROnPlateau(monitor='val_loss',
-                          patience=2,
+                          patience=1,
                           verbose=1,
                           mode='min'),
 
