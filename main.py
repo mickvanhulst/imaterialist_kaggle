@@ -2,11 +2,12 @@ from batch_generator.batch_gen import MultiLabelGenerator
 from networks.inceptionv3 import inception_v3_model
 from networks import training
 from evaluation.callbacks import get_callbacks
+from evaluation.submision import create_submission
 import os.path
 from keras.models import load_model
 
 
-def main():
+def train():
     print("Setting up Model...")
     model_name = "inception_v3"
     model, base_model = inception_v3_model(n_classes, input_shape=input_dim)
@@ -21,7 +22,7 @@ def main():
     print("Training batches:", len(training_generator))
     print("Validation batches:", len(validation_generator))
 
-    training.set_callbacks(get_callbacks("model_name", validation_generator))
+    training.set_callbacks(get_callbacks(model_name, validation_generator))
     
     if os.path.isfile("./best_model_{}.h5".format(model_name)):
         print("Loading existing model ...")
@@ -32,7 +33,26 @@ def main():
                                  steps_per_epoch=50, val_percentage=0.05, epochs=10)
 
 
+def predict():
+    print("Setting up Test Generator")
+    validation_generator = MultiLabelGenerator(preprocessing_function=inception_v3_model, horizontal_flip=False)
+    validation_generator = validation_generator.make_datagenerator(datafile='./data/test.json', test=True)
+
+    print("Setting up Model...")
+    model_name = "inception_v3"
+
+    if os.path.isfile("./best_model_{}.h5".format(model_name)):
+        print("Loading existing model ...")
+        model = load_model("./best_model_{}.h5".format(model_name))
+    else:
+        print("Model 'best_model_{}.h5' not found!".format(model_name))
+        raise Exception("You need to train a model before you can make predictions.")
+
+    create_submission(validation_generator, model, steps=1)
+
+
 if __name__ == "__main__":
     input_dim = (224, 224, 3)
     n_classes = 228
-    main()
+    # train()
+    predict()
