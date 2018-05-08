@@ -36,7 +36,7 @@ def train():
 def predict():
     print("Setting up Test Generator")
     validation_generator = MultiLabelGenerator(preprocessing_function=inception_v3_model, horizontal_flip=False)
-    validation_generator = validation_generator.make_datagenerator(datafile='./data/test.json', test=True)
+    validation_generator = validation_generator.make_datagenerator(datafile='./data/test.json', test=True, shuffle=False)
 
     print("Setting up Model...")
     model_name = "inception_v3"
