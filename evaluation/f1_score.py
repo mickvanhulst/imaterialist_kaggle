@@ -6,11 +6,17 @@ import numpy as np
 from matplotlib.pylab import ion
 
 
-class micro_averaged_f1(Callback):
+class MicroAveragedF1(Callback):
     def __init__(self, validation_generator):
+        super().__init__()
         self.val_gen = validation_generator
         self.f1_score = []
         self.batches = 2
+        self.test = 0
+        self.fp = 0
+        self.fn = 0
+        self.tp = 0
+        self.tn = 0
 
     def on_train_begin(self, logs={}):
         self.test = 0
@@ -18,7 +24,6 @@ class micro_averaged_f1(Callback):
         self.fn = 0
         self.tp = 0
         self.tn = 0
-
 
     def on_epoch_end(self, epoch, logs={}):
         y_true = np.zeros(32*self.batches*228)
