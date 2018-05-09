@@ -106,34 +106,28 @@ class DataGenerator(Iterator):
             row = self.train_df.loc[self.train_df['imageId'] == int(ID)]
             url = row['url'].values
             labels = row['labelId'].values
-
-
             labels = np.asarray(labels)
             labels = np.subtract(labels[0],1)
 
+            try:
+                image = self.download_image(url)
+                image = self.image_data_generator.random_transform(image)
+                image = self.image_data_generator.standardize(image)
 
-            image = self.download_image(url)
-            image = self.image_data_generator.random_transform(image)
-            image = self.image_data_generator.standardize(image)
+                X[i,] = image
 
+                # Store label and class
+                y[i,] = self._labels_to_array(labels)
+            except Exception as e:
+                print("Exception|", e, "|", url)
 
-
-            X[i,] = image
-
-            # Store label and class
-            y[i,] = self._labels_to_array(labels)
-
-
-
-        # plt.show()
         return X, y
 
-# training_gen =  MultiLabelGenerator(datafile='../data/train.json')
-#
-# training_generator_dummy = MultiLabelGenerator(horizontal_flip=True)
-#
-# training_generator = training_generator_dummy.make_datagenerator(datafile='../data/train.json')
-#
-# # for batch_x, batch_y in training_generator:
-#     print(batch_x.shape)
-#     print(batch_y.shape)
+
+training_generator_dummy = MultiLabelGenerator(horizontal_flip=True)
+
+training_generator = training_generator_dummy.make_datagenerator(datafile='../data/train.json')
+
+for batch_x, batch_y in training_generator:
+    print(batch_x.shape)
+    print(batch_y.shape)
