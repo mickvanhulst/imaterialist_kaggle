@@ -6,6 +6,7 @@ from keras.models import Model
 from keras.optimizers import SGD, RMSprop
 from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 from keras.layers import Flatten, Dense, Dropout
+from evaluation import f1_score
 import numpy as np
 from sklearn import metrics
 
@@ -43,7 +44,7 @@ def resnet_prep(x):
     return np.squeeze(x, axis=0)
 
 
-def create_callbacks():
+def create_callbacks(val_gen):
     checkpoint = ModelCheckpoint('./best_model1.h5',
                                  monitor='val_loss',
                                  verbose=1,
@@ -58,7 +59,7 @@ def create_callbacks():
                                verbose=1)
 
     callback_list = [
-    checkpoint, early_stop
+    checkpoint, early_stop, f1_score.MicroAveragedF1(val_gen)
     ]
     return callback_list
 
@@ -78,16 +79,18 @@ def main():
 
 
     # model.load_weights('./best_model1.h5')
-    model.compile(optimizer=SGD(lr=0.01), loss='binary_crossentropy', metrics=['accuracy'])
-    calls = create_callbacks()
+    model.compile(optimizer=SGD(lr=0.02), loss='binary_crossentropy', metrics=['accuracy'])
+    calls = create_callbacks(validation_generator)
     # history = model.fit_generator(generator = training_generator,
-    #                               steps_per_epoch  = 32,
+    #                               steps_per_epoch  = 1,
     #                               epochs           = 5,
     #                               verbose          = 1,
     #                               validation_data  = validation_generator,
     #                               validation_steps = 2,
     #                               callbacks        = calls
     #                               )
+
+    # y_predict = model.predict_generator(validation_generator, steps = 10)
     #
 
     # for batch_x, batch_y in(training_generator):
