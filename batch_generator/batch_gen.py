@@ -132,11 +132,12 @@ class DataGenerator(Iterator):
             return X
 
 
-training_generator_dummy = MultiLabelGenerator(horizontal_flip=True)
+if __name__ == "__main__":
+    training_generator_dummy = MultiLabelGenerator(horizontal_flip=True)
 
-training_generator = training_generator_dummy.make_datagenerator(datafile='../data/train.json')
+    training_generator = training_generator_dummy.make_datagenerator(datafile='../data/train.json')
 
-for batch_x, batch_y in training_generator:
-    print(batch_x.shape)
-    print(batch_y.shape)
+    for batch_x, batch_y in training_generator:
+        print(batch_x.shape)
+        print(batch_y.shape)
 
