@@ -103,37 +103,40 @@ class DataGenerator(Iterator):
 
         # Generate data
         for i, ID in enumerate(list_IDs_temp):
-            row = self.train_df.loc[self.train_df['imageId'] == int(ID)]
-            url = row['url'].values
 
-            if not self.test:
-                labels = row['labelId'].values
+            try:
+                row = self.train_df.loc[self.train_df['imageId'] == int(ID)]
+                url = row['url'].values
 
-                labels = np.asarray(labels)
-                labels = np.subtract(labels[0], 1)
+                if not self.test:
+                    labels = row['labelId'].values
 
-            image = self.download_image(url)
-            # image = self.image_data_generator.random_transform(image)
-            # image = self.image_data_generator.standardize(image)
+                    labels = np.asarray(labels)
+                    labels = np.subtract(labels[0], 1)
 
-            X[i,] = image
+                image = self.download_image(url)
+                # image = self.image_data_generator.random_transform(image)
+                # image = self.image_data_generator.standardize(image)
 
-            if not self.test:
-                # Store label and class
-                y[i,] = self._labels_to_array(labels)
+                X[i,] = image
+
+                if not self.test:
+                    # Store label and class
+                    y[i,] = self._labels_to_array(labels)
+            except Exception as e:
+                print("Exception|", e, "|", url)
 
         if not self.test:
             return X, y
         else:
             return X
 
-# training_gen =  MultiLabelGenerator(datafile='../data/train.json')
-#
-# training_generator_dummy = MultiLabelGenerator(horizontal_flip=True)
-#
-# training_generator = training_generator_dummy.make_datagenerator(datafile='../data/train.json')
-#
-# # for batch_x, batch_y in training_generator:
-#     print(batch_x.shape)
-#     print(batch_y.shape)
+
+training_generator_dummy = MultiLabelGenerator(horizontal_flip=True)
+
+training_generator = training_generator_dummy.make_datagenerator(datafile='../data/train.json')
+
+for batch_x, batch_y in training_generator:
+    print(batch_x.shape)
+    print(batch_y.shape)
 
