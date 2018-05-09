@@ -30,13 +30,13 @@ class DataGenerator(Iterator):
     'Generates data for Keras'
 
     def __init__(self,image_data_generator, datafile, batch_size=32, dim=(224, 224), n_channels=3, n=None,
-                 n_classes=228, seed=None, total_batches_seen=0, index_array=None, shuffle=True):
+                 n_classes=229, seed=None, total_batches_seen=0, index_array=None, shuffle=True):
         'Initialization'
         self.n = 0
         self.total_batches_seen = total_batches_seen
         self.seed = seed
         self.index_array = index_array
-        self.shuffle = True
+        self.shuffle = shuffle
         self.image_data_generator = image_data_generator
 
 
@@ -44,8 +44,8 @@ class DataGenerator(Iterator):
         self.dim = dim
         self.n_channels = n_channels
         self.n_classes = n_classes
-        # self.shuffle = shuffle
-        # self.on_epoch_end()
+
+
         with open(datafile, 'r') as f:
             train_data = json.load(f)
 
