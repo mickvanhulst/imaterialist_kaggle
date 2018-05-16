@@ -4,39 +4,45 @@ from IPython.display import clear_output
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.pylab import ion
+from tqdm import tqdm
 
 
-class MicroAveragedF1(Callback):
-    def __init__(self, validation_generator):
+class AveragedF1(Callback):
+    def __init__(self, validation_generator, threshold=0.5, steps=None):
+        """
+        The F1 score averaged over all classes
+        :param validation_generator:
+        :param threshold:
+        :param steps: number of validation batches, default to whole validation dataset
+        """
         super().__init__()
         self.val_gen = validation_generator
-        self.f1_score = []
-        self.batches = 2
-        self.test = 0
-        self.fp = 0
-        self.fn = 0
-        self.tp = 0
-        self.tn = 0
-
-    def on_train_begin(self, logs={}):
-        self.test = 0
-        self.fp = 0
-        self.fn = 0
-        self.tp = 0
-        self.tn = 0
+        self.threshold = threshold
+        self.f1_scores = []
+        self.steps = steps
 
     def on_epoch_end(self, epoch, logs={}):
-        y_true = np.zeros(32*self.batches*228)
-        y_pred = np.zeros(32*self.batches*228)
-        for i in range(self.batches):
-            n_x, n_y = self.val_gen.next()
-            y_true[i*32*228:(i+1)*32*228] = n_y.flatten()
-            y_pred[i*32*228:(i+1)*32*228] = self.model.predict(n_x).flatten()
-        print(y_pred.shape)
-        y_pred[y_pred > 0.5] = 1
-        y_pred[y_pred <= 0.5] = 0
-        score = f1_score(y_true, y_pred, average='micro')
-        self.f1_score.append(score)
+        if not self.steps:
+            y_true = self.val_gen.train_df['labelId']
+            y_pred = self.model.predict_generator(self.val_gen, verbose=self.params['verbose'])
+        else:
+            y_true = np.zeros(self.val_gen.batch_size * self.steps * self.val_gen.n_classes)
+            y_pred = np.zeros(self.val_gen.batch_size * self.steps * self.val_gen.n_classes)
+            for step in tqdm(range(self.steps), desc="F1-Score", disable=not self.params['verbose']):
+                n_x, n_y = self.val_gen.next()
+                y_true[step * self.val_gen.batch_size * self.val_gen.n_classes:
+                       (step + 1) * self.val_gen.batch_size * self.val_gen.n_classes] \
+                    = n_y.flatten()
+                y_pred[step * self.val_gen.batch_size * self.val_gen.n_classes:
+                       (step + 1) * self.val_gen.batch_size * self.val_gen.n_classes] \
+                    = self.model.predict(n_x).flatten()
+
+        y_pred[y_pred > self.threshold] = 1
+        y_pred[y_pred <= self.threshold] = 0
+        score = f1_score(y_true, y_pred, average='macro')
+        score = np.sum(score) / len(score)
+        self.f1_scores.append(score)
+        logs['F1'] = score
         print('F1-score: {}'.format(score))
 
     def on_train_end(self, logs={}):
@@ -44,7 +50,9 @@ class MicroAveragedF1(Callback):
 
     def plot(self):
         clear_output()
-        N = len(self.f1_score)
-        plt.plot(range(0, N), self.f1_score)
-        plt.legend('micro F1-score')
+        plt.plot(self.f1_scores)
+        plt.ylim([0, 1])
+        plt.title("F1 Score")
+        plt.ylabel("F1")
+        plt.xlabel("epoch")
         plt.show()
