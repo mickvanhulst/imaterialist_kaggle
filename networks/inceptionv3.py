@@ -1,6 +1,5 @@
 from keras.applications.inception_v3 import InceptionV3
 from keras.layers import Dense, GlobalAveragePooling2D
-from keras.layers import Input
 from keras.models import Model
 
 from utils import params
@@ -39,9 +38,5 @@ def inception_v3_model(n_outputs, n_features=1024, optimizer='rmsprop', input_sh
     return model, base_model
 
 
-def test():
-    inception_v3_model(100)
-
-
 if __name__ == "__main__":
-    test()
+    inception_v3_model(params.n_classes, input_shape=params.input_shape)

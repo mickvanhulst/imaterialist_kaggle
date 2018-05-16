@@ -1,9 +1,7 @@
 from keras.applications.mobilenet import MobileNet
-from keras.models import Model
 from keras.layers import Conv2D, GlobalAveragePooling2D, Reshape, Dropout
-from networks.training import train_top, fine_tune
+from keras.models import Model
 
-from scraper.script_download_image import download_dataset
 from utils import params
 
 
@@ -34,7 +32,7 @@ def mobilenet_model(n_outputs, n_features=1024, optimizer='rmsprop', input_shape
     model = Model(inputs=base_model.input, outputs=predictions, name="mobilenet_custom")
 
     # freeze all MobileNet layers
-    for layer in model.layers[:-2]:
+    for layer in model.layers[:-5]:
         layer.trainable = False
 
     # compile the model (should be done *after* setting layers to non-trainable)
@@ -44,16 +42,5 @@ def mobilenet_model(n_outputs, n_features=1024, optimizer='rmsprop', input_shape
     return model, base_model
 
 
-def test():
-    download_dataset('../data/train.json', '../data/img', 1000)
-
-    model, base_model = mobilenet_model(100)
-
-    # TODO: replace None with generator
-    train_top(None, model, base_model)
-    # train the top 2 inception blocks, i.e. we will freeze the first 249 layers
-    fine_tune(None, model, idx_lower=249)
-
-
 if __name__ == "__main__":
-    test()
+    mobilenet_model(params.n_classes, input_shape=params.input_shape)

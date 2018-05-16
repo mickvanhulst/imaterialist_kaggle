@@ -1,9 +1,7 @@
 from keras.applications.resnet50 import ResNet50
-from keras.models import Model
 from keras.layers import Dense, GlobalAveragePooling2D
-from networks.training import train_top, fine_tune
+from keras.models import Model
 
-from scraper.script_download_image import download_dataset
 from utils import params
 
 
@@ -18,7 +16,8 @@ def resnet_50_model(n_outputs, n_features=1024, optimizer='rmsprop', input_shape
     :return: custom inception_v3 model
     """
 
-    base_model = ResNet50(include_top=False, weights='imagenet', input_shape=input_shape, pooling=None, classes=n_outputs)
+    base_model = ResNet50(include_top=False, weights='imagenet', input_shape=input_shape, pooling=None,
+                          classes=n_outputs)
 
     x = base_model.output
     x = GlobalAveragePooling2D()(x)
@@ -40,16 +39,5 @@ def resnet_50_model(n_outputs, n_features=1024, optimizer='rmsprop', input_shape
     return model, base_model
 
 
-def test():
-    download_dataset('../data/train.json', '../data/img', 1000)
-
-    model, base_model = resnet_50_model(100)
-
-    # TODO: replace None with generator
-    train_top(None, model, base_model)
-    # Freeze up to res5c_branch2a
-    fine_tune(None, model, idx_lower=163)
-
-
 if __name__ == "__main__":
-    test()
+    resnet_50_model(params.n_classes, input_shape=params.input_shape)

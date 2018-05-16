@@ -1,13 +1,12 @@
 import io
 import json
-import numpy as np
+import multiprocessing
+import os
+
 import pandas as pd
 import urllib3
 from PIL import Image
 from tqdm import tqdm
-import multiprocessing
-
-import os
 
 urllib3.disable_warnings()
 tqdm.pandas()
@@ -32,11 +31,14 @@ def download_image(pair):
     if os.path.isfile(save_path):
         return
 
-    response = http_pool.request("GET", url)
-    image = Image.open(io.BytesIO(response.data))
-    image = image.convert("RGB")
-    image = image.resize(resize_dim, Image.ANTIALIAS)
-    image.save(save_path, optimize=True, quality=85)
+    try:
+        response = http_pool.request("GET", url)
+        image = Image.open(io.BytesIO(response.data))
+        image = image.convert("RGB")
+        image = image.resize(resize_dim, Image.ANTIALIAS)
+        image.save(save_path, optimize=True, quality=85)
+    except Exception as e:
+        print("Image '{}' could not be loaded from '{}'.\n{}".format(ID, url, e))
 
 
 def download_data(df_path):
@@ -69,4 +71,3 @@ if __name__ == "__main__":
         os.makedirs(data_dir)
 
     download_data("../data/train.json")
-

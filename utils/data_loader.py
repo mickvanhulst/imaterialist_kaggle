@@ -1,5 +1,7 @@
 import io
 import json
+import os
+
 import keras.backend as K
 import numpy as np
 import pandas as pd
@@ -7,8 +9,6 @@ import urllib3
 from PIL import Image
 from tqdm import tqdm
 from urllib3.util import Retry
-
-import os
 
 urllib3.disable_warnings()
 tqdm.pandas()
@@ -60,5 +60,4 @@ def download_data(df_path, data_dir, resize_dim):
 
 
 if __name__ == "__main__":
-    download_data("../data/train.json", "../data/train/", resize_dim=(224, 224))
-
+    download_data("../data/train.json", "../data/img/train/", resize_dim=(224, 224))
