@@ -1,6 +1,6 @@
 from keras.applications.mobilenet import MobileNet
 from keras.models import Model
-from keras.layers import Dense, GlobalAveragePooling2D
+from keras.layers import Conv2D, GlobalAveragePooling2D, Reshape, Dropout
 from networks.training import train_top, fine_tune
 
 from scraper.script_download_image import download_dataset
@@ -19,17 +19,19 @@ def mobilenet_model(n_outputs, n_features=1024, optimizer='rmsprop', input_shape
     """
     # create the base pre-trained model
     base_model = MobileNet(input_shape=input_shape, weights='imagenet', include_top=False)
-
-    # add a global spatial average pooling layer
     x = base_model.output
-    x = GlobalAveragePooling2D()(x)
-    # Feature Layer
-    x = Dense(n_features, activation='relu')(x)
+
+    # add a global spatial average pooling layer (features)
+    x = GlobalAveragePooling2D(name="features")(x)
+    x = Reshape((1, 1, n_features), name='features_reshape')(x)
+    x = Dropout(1e-3, name='dropout')(x)
+
     # Prediction layer, Probability per class
-    predictions = Dense(n_outputs, activation='softmax')(x)
+    predictions = Conv2D(n_outputs, (1, 1), padding="same", activation='softmax', name="preds")(x)
+    predictions = Reshape((n_outputs,), name="pred_reshape")(predictions)
 
     # this is the model we will train
-    model = Model(inputs=base_model.input, outputs=predictions)
+    model = Model(inputs=base_model.input, outputs=predictions, name="mobilenet_custom")
 
     # freeze all MobileNet layers
     for layer in model.layers[:-2]:
