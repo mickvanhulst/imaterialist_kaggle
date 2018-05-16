@@ -23,7 +23,7 @@ def train():
 
     validation_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=True)
     validation_generator = validation_generator.make_datagenerator(
-        datafile='./data/validation.json', data_path='./data/img/val/', save_images=save_images)
+        datafile='./data/validation.json', data_path='./data/img/validation/', save_images=save_images)
 
     print("Training batches:", len(training_generator))
     print("Validation batches:", len(validation_generator))
@@ -36,14 +36,13 @@ def train():
 
     history = training.train_top(generator_train=training_generator, generator_val=validation_generator,
                                  model=model, base_model=base_model,
-                                 steps_per_epoch=10, val_percentage=0.025, epochs=2)
+                                 steps_per_epoch=None, epochs=10)
 
 
 def predict():
     global model_name
     global model_class
     global save_images
-
 
     print("Setting up Test Generator")
     validation_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=False)
