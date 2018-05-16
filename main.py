@@ -16,15 +16,17 @@ def train():
 
     print("Creating Data Generators...")
     training_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=True)
-    training_generator = training_generator.make_datagenerator(datafile='./data/train.json', save_images=True)
+    training_generator = training_generator.make_datagenerator(
+        datafile='./data/train.json', data_path='./data/img/train/', save_images=True)
 
     validation_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=True)
-    validation_generator = validation_generator.make_datagenerator(datafile='./data/validation.json', save_images=True)
+    validation_generator = validation_generator.make_datagenerator(
+        datafile='./data/validation.json', data_path='./data/img/val/', save_images=True)
 
     print("Training batches:", len(training_generator))
     print("Validation batches:", len(validation_generator))
 
-    training.set_callbacks(get_callbacks(model_name, validation_generator))
+    training.set_callbacks(get_callbacks(model_name, validation_generator, val_steps=3))
     
     if os.path.isfile("./best_model_{}.h5".format(model_name)):
         print("Loading existing model ...")
@@ -32,13 +34,14 @@ def train():
 
     history = training.train_top(generator_train=training_generator, generator_val=validation_generator,
                                  model=model, base_model=base_model,
-                                 steps_per_epoch=1, val_percentage=0.05, epochs=10)
+                                 steps_per_epoch=1, val_percentage=0.2, epochs=2)
 
 
 def predict():
     print("Setting up Test Generator")
     validation_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=False)
-    validation_generator = validation_generator.make_datagenerator(datafile='./data/test.json', test=True, shuffle=False)
+    validation_generator = validation_generator.make_datagenerator(
+        datafile='./data/test.json', test=True, shuffle=False, data_path='./data/img/test/', save_images=True)
 
     print("Setting up Model...")
     global model_name
