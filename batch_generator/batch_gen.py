@@ -65,12 +65,24 @@ class DataGenerator(Iterator):
             train_df = train_imgs_df
 
         # Shape of train_df ['imageId', 'url', 'labelId'], shape: (1014544, 3)
-        self.train_df = train_df
+        # and remove columns of labels that are considered outliers
+        self.train_df = self.__find_infreq_classes(train_df)
 
         # Length Total Dataset
         self.samples = len(train_df)
 
         super(DataGenerator, self).__init__(self.samples, batch_size, shuffle, seed)
+
+    def __find_infreq_classes(self, df):
+        # Count occurences
+        cnt_labels = df['labelId'].value_counts()
+
+        #
+
+        # Remove columns
+
+        return df
+
 
     def __len__(self):
         'Denotes the number of batches per epoch'
