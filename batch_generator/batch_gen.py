@@ -1,5 +1,6 @@
 import io
 import json
+import keras
 import keras.backend as K
 import numpy as np
 import pandas as pd
@@ -8,6 +9,8 @@ from PIL import Image
 from keras.preprocessing.image import ImageDataGenerator, Iterator
 from tqdm import tqdm
 from urllib3.util import Retry
+
+from networks.mobilenet import mobilenet_model
 
 import os
 
@@ -19,23 +22,21 @@ class MultiLabelGenerator(ImageDataGenerator):
     def __init__(self, *args, **kwargs):
         super(MultiLabelGenerator, self).__init__(*args, **kwargs)
 
-    def make_datagenerator(self, datafile, batch_size=32, dim=(224, 224), n_channels=3,
-                           n_classes=228, seed=None, total_batches_seen=0, index_array=None, shuffle=True, test=False, data_path='./data/img/', save_images=False):
-        return DataGenerator(self, datafile, batch_size, dim, n_channels,
-                             n_classes, seed, total_batches_seen, index_array, shuffle, test, data_path, save_images)
+    def make_datagenerator(self, datafile, batch_size=32, dim=(224, 224), n_channels=3, n_classes=228,
+                           seed=None, shuffle=True, test=False, data_path='./data/img/', save_images=False):
+        return DataGenerator(self, datafile, batch_size, dim, n_channels, n_classes,
+                             seed, shuffle, test, data_path, save_images)
 
 
-class DataGenerator(Iterator):
+class DataGenerator(keras.utils.Sequence):
     """ Generates data for Keras """
 
     def __init__(self, image_data_generator, datafile, batch_size=32, dim=(224, 224), n_channels=3,
-                 n_classes=228, seed=None, total_batches_seen=0, index_array=None, shuffle=True, test=False, data_path='./data/img/', save_images=False):
-        'Initialization'
+                 n_classes=228, seed=None, shuffle=True, test=False, data_path='./data/img/', save_images=False):
+        """ Initialization """
         self.n = 0
         self.test = test
-        self.total_batches_seen = total_batches_seen
         self.seed = seed
-        self.index_array = index_array
         self.shuffle = shuffle
         self.image_data_generator = image_data_generator
 
@@ -46,39 +47,45 @@ class DataGenerator(Iterator):
 
         # vars for saving and loading the image
         self.save_images = save_images
-        self.path=data_path
+        self.path = data_path
 
         if not os.path.exists(self.path):
             os.makedirs(self.path)
-        self.shuffle = shuffle
-        # self.on_epoch_end()
+
         with open(datafile, 'r') as f:
             train_data = json.load(f)
 
-        train_imgs_df = pd.DataFrame.from_records(train_data["images"])
+        df = pd.DataFrame.from_records(train_data["images"])
 
         if not test:
             train_labels_df = pd.DataFrame.from_records(train_data["annotations"])
-            train_labels_df["labelId"] = train_labels_df["labelId"].apply(lambda x: [int(i) for i in x])
-            train_df = pd.merge(train_imgs_df, train_labels_df, on="imageId", how="outer")
-            train_df['imageId'] = train_df['imageId'].apply(lambda x: int(x))
-        else:
-            train_df = train_imgs_df
+            df = pd.merge(df, train_labels_df, on="imageId", how="outer")
+            df["labelId"] = df["labelId"].apply(lambda x: [int(i) for i in x])
+
+        df['imageId'] = df['imageId'].apply(lambda x: int(x))
 
         # Shape of train_df ['imageId', 'url', 'labelId'], shape: (1014544, 3)
         # and remove columns of labels that are considered outliers
-        self.train_df = self.__find_infreq_classes(train_df)
+        self.df = self.__find_infreq_classes(df)
+
+        self.original_indices = df['imageId'].values
+        self.epoch_indices = self.original_indices
 
         # Length Total Dataset
-        self.samples = len(train_df)
+        self.n_samples = len(df)
 
-        super(DataGenerator, self).__init__(self.samples, batch_size, shuffle, seed)
+        self.on_epoch_end()
+
+    def on_epoch_end(self):
+        """
+        Create new indices for the epoch
+        """
+        if self.shuffle:
+            np.random.shuffle(self.epoch_indices)
 
     def __find_infreq_classes(self, df):
         # Count occurences
-        cnt_labels = df['labelId'].value_counts()
-
-        #
+        # cnt_labels = df['labelId'].value_counts()
 
         # Remove columns
 
@@ -86,14 +93,21 @@ class DataGenerator(Iterator):
 
     def __len__(self):
         """ Denotes the number of batches per epoch """
-        return int(np.floor(len(self.train_df) / self.batch_size))
+        return int(np.ceil(self.n_samples / self.batch_size))
 
-    def next(self):
+    def __getitem__(self, index):
         """ Generate one batch of data """
-        with self.lock:
-            index_array = next(self.index_generator)
+        # Generate indexes of the batch
+        batch_indices = self.epoch_indices[index * self.batch_size:(index + 1) * self.batch_size]
 
-        return self._get_batches_of_transformed_samples(index_array)
+        return self._get_batches_of_transformed_samples(batch_indices)
+
+    # def next(self):
+    #     """ Generate one batch of data """
+    #     with self.lock:
+    #         index_array = next(self.index_generator)
+    #
+    #     return self._get_batches_of_transformed_samples(index_array)
 
     def get_image(self, url, ID):
         """
@@ -102,8 +116,8 @@ class DataGenerator(Iterator):
         """
 
         # load the image from ./data/img/{ID} if it exists
-        save_path = os.path.join(self.path, str(ID))
-        if self.save_images and os.path.isfile(save_path):
+        save_path = os.path.join(self.path, str(ID) + '.jpg')
+        if os.path.isfile(save_path):
             image = Image.open(save_path)
             image = np.asarray(image, dtype=K.floatx())
             return image / 255
@@ -134,16 +148,16 @@ class DataGenerator(Iterator):
         :return X: (n_samples, *dim, n_channels) y:(n_samples, n_classes)
         """
         # Initialization
-        X = np.empty((self.batch_size, *self.dim, self.n_channels), dtype=K.floatx())
+        X = np.empty((len(list_IDs_temp), *self.dim, self.n_channels), dtype=K.floatx())
 
         if not self.test:
-            y = np.empty((self.batch_size, self.n_classes), dtype=np.int)
+            y = np.empty((len(list_IDs_temp), self.n_classes), dtype=np.int)
 
         # Generate data
         for i, ID in enumerate(list_IDs_temp):
 
             try:
-                row = self.train_df.loc[self.train_df['imageId'] == int(ID)]
+                row = self.df.loc[self.df['imageId'] == int(ID)]
                 url = row['url'].values
 
                 image = self.get_image(url, ID)
@@ -170,13 +184,16 @@ class DataGenerator(Iterator):
 
 
 if __name__ == "__main__":
-    training_generator_dummy = MultiLabelGenerator(horizontal_flip=True)
+    generator = MultiLabelGenerator(horizontal_flip=True)
+    generator = generator.make_datagenerator(
+        datafile='../data/validation.json', data_path='../data/img/validation/', save_images=True, shuffle=True)
 
-    training_generator = training_generator_dummy.make_datagenerator(
-        datafile='../data/train.json', data_path='../data/img/train/', save_images=True, shuffle=False)
+    # n_samples = 0
+    # for i in tqdm(range(len(generator)), desc="Iterating Over Generator", unit="batches"):
+    #     batch_x, _ = generator[i]
+    #     n_samples += batch_x.shape[0]
+    #
+    # print("Total Samples:", n_samples)
 
-    n_samples = 0
-    for batch_x, batch_y in tqdm(training_generator, desc="Iterating Over Generator", unit="batches"):
-        n_samples += batch_x.shape[0]
-
-    print("Total Samples:", n_samples)
+    model, _ = mobilenet_model(generator.n_classes)
+    model.fit_generator(generator, steps_per_epoch=None, epochs=1, verbose=1)
