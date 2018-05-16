@@ -5,7 +5,7 @@ from networks import training
 from evaluation.callbacks import get_callbacks
 from evaluation.submision import create_submission
 import os.path
-from keras.models import load_model
+from utils.load_model import load_model
 
 
 def train():
@@ -32,7 +32,7 @@ def train():
 
     history = training.train_top(generator_train=training_generator, generator_val=validation_generator,
                                  model=model, base_model=base_model,
-                                 steps_per_epoch=50, val_percentage=0.05, epochs=10)
+                                 steps_per_epoch=1, val_percentage=0.05, epochs=10)
 
 
 def predict():
