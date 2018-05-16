@@ -6,6 +6,7 @@ import pandas as pd
 import urllib3
 from PIL import Image
 from keras.preprocessing.image import ImageDataGenerator, Iterator
+from tqdm import tqdm
 from urllib3.util import Retry
 
 import os
@@ -136,11 +137,11 @@ class DataGenerator(Iterator):
                 # image = self.image_data_generator.random_transform(image)
                 # image = self.image_data_generator.standardize(image)
 
-                X[i,] = image
+                X[i, ] = image
 
                 if not self.test:
                     # Store label and class
-                    y[i,] = self._labels_to_array(labels)
+                    y[i, ] = self._labels_to_array(labels)
             except Exception as e:
                 print("Exception|", e, "|", url)
 
@@ -153,9 +154,11 @@ class DataGenerator(Iterator):
 if __name__ == "__main__":
     training_generator_dummy = MultiLabelGenerator(horizontal_flip=True)
 
-    training_generator = training_generator_dummy.make_datagenerator(datafile='../data/train.json', data_path='../data/img/', save_images=True)
+    training_generator = training_generator_dummy.make_datagenerator(
+        datafile='../data/train.json', data_path='../data/img/train/', save_images=True, shuffle=False)
 
-    for batch_x, batch_y in training_generator:
-        print(batch_x.shape)
-        print(batch_y.shape)
+    n_samples = 0
+    for batch_x, batch_y in tqdm(training_generator, desc="Iterating Over Generator", unit="batches"):
+        n_samples += batch_x.shape[0]
 
+    print("Total Samples:", n_samples)
