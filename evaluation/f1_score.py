@@ -40,7 +40,6 @@ class AveragedF1(Callback):
         y_pred[y_pred > self.threshold] = 1
         y_pred[y_pred <= self.threshold] = 0
         score = f1_score(y_true, y_pred, average='macro')
-        score = np.sum(score) / len(score)
         self.f1_scores.append(score)
         logs['F1'] = score
         print('F1-score: {}'.format(score))
