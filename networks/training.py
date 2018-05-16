@@ -32,7 +32,7 @@ def train_top(generator_train, generator_val, model, base_model,
         layer.trainable = False if idx_layer < len(base_model.layers) else True
 
     # compile the model (should be done *after* setting layers to non-trainable)
-    model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy'])
+    model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy', 'categorical_accuracy'])
 
     history = model.fit_generator(generator=generator_train,
                                   steps_per_epoch=steps_per_epoch,
