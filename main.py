@@ -1,6 +1,7 @@
 from batch_generator.batch_gen import MultiLabelGenerator
 from networks.inceptionv3 import inception_v3_model
 from networks.mobilenet import mobilenet_model
+from networks.resnet_50 import resnet_50_model
 from networks import training
 from evaluation.callbacks import get_callbacks
 from evaluation.submision import create_submission
@@ -12,16 +13,17 @@ def train():
     print("Setting up Model...")
     global model_name
     global model_class
+    global save_images
     model, base_model = model_class(n_classes, input_shape=input_dim)
 
     print("Creating Data Generators...")
     training_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=True)
     training_generator = training_generator.make_datagenerator(
-        datafile='./data/train.json', data_path='./data/img/train/', save_images=True)
+        datafile='./data/train.json', data_path='./data/img/train/', save_images=save_images)
 
     validation_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=True)
     validation_generator = validation_generator.make_datagenerator(
-        datafile='./data/validation.json', data_path='./data/img/val/', save_images=True)
+        datafile='./data/validation.json', data_path='./data/img/val/', save_images=save_images)
 
     print("Training batches:", len(training_generator))
     print("Validation batches:", len(validation_generator))
@@ -34,18 +36,21 @@ def train():
 
     history = training.train_top(generator_train=training_generator, generator_val=validation_generator,
                                  model=model, base_model=base_model,
-                                 steps_per_epoch=1, val_percentage=0.2, epochs=2)
+                                 steps_per_epoch=10, val_percentage=0.025, epochs=2)
 
 
 def predict():
+    global model_name
+    global model_class
+    global save_images
+
+
     print("Setting up Test Generator")
     validation_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=False)
     validation_generator = validation_generator.make_datagenerator(
-        datafile='./data/test.json', test=True, shuffle=False, data_path='./data/img/test/', save_images=True)
+        datafile='./data/test.json', test=True, shuffle=False, data_path='./data/img/test/', save_images=save_images)
 
     print("Setting up Model...")
-    global model_name
-
     if os.path.isfile("./best_model_{}.h5".format(model_name)):
         print("Loading existing model ...")
         model = load_model("./best_model_{}.h5".format(model_name))
@@ -59,6 +64,7 @@ def predict():
 if __name__ == "__main__":
     model_name = "mobilenet"
     model_class = mobilenet_model
+    save_images = True
     input_dim = (224, 224, 3)
     n_classes = 228
     train()
