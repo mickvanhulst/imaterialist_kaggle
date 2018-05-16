@@ -4,7 +4,7 @@ from keras.layers import Dense, GlobalAveragePooling2D
 from networks.training import train_top, fine_tune
 
 from scraper.script_download_image import download_dataset
-from keras.layers import Input
+from utils import params
 
 
 def resnet_50_model(n_outputs, n_features=1024, optimizer='rmsprop', input_shape=(299, 299, 3)):
@@ -23,7 +23,7 @@ def resnet_50_model(n_outputs, n_features=1024, optimizer='rmsprop', input_shape
     x = base_model.output
     x = GlobalAveragePooling2D()(x)
     x = Dense(n_features, activation='relu', name='features')(x)
-    preds = Dense(228, activation='softmax', name='predict_layer')(x)
+    preds = Dense(228, activation=params.pred_activation, name='predict_layer')(x)
 
     model = Model(inputs=[base_model.input], outputs=[preds])
 
@@ -34,7 +34,7 @@ def resnet_50_model(n_outputs, n_features=1024, optimizer='rmsprop', input_shape
         layer.trainable = False
 
     # compile the model (should be done *after* setting layers to non-trainable)
-    model.compile(optimizer=optimizer, loss='categorical_crossentropy')
+    model.compile(optimizer=optimizer, loss=params.loss)
 
     model.summary()
     return model, base_model

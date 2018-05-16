@@ -1,4 +1,5 @@
 from keras.optimizers import SGD
+from utils import params
 
 callbacks = None
 
@@ -32,7 +33,7 @@ def train_top(generator_train, generator_val, model, base_model,
         layer.trainable = False if idx_layer < len(base_model.layers) else True
 
     # compile the model (should be done *after* setting layers to non-trainable)
-    model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy', 'categorical_accuracy'])
+    model.compile(optimizer=optimizer, loss=params.loss, metrics=params.metrics)
 
     history = model.fit_generator(generator=generator_train,
                                   steps_per_epoch=steps_per_epoch,
@@ -67,7 +68,7 @@ def train_full(generator_train, generator_val, model,
         layer.trainable = True
 
     # compile the model (should be done *after* setting layers to non-trainable)
-    model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy'])
+    model.compile(optimizer=optimizer, loss=params.loss, metrics=params.metrics)
 
     history = model.fit_generator(generator=generator_train,
                                   steps_per_epoch=steps_per_epoch,
@@ -108,7 +109,7 @@ def fine_tune(generator_train, generator_val, model, idx_lower,
         layer.trainable = True
 
     # Recompile the model for these modifications to take effect
-    model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy'])
+    model.compile(optimizer=optimizer, loss=params.loss, metrics=params.metrics)
 
     history = model.fit_generator(generator=generator_train,
                                   steps_per_epoch=steps_per_epoch,

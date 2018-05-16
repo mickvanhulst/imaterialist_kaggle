@@ -4,7 +4,7 @@ from keras.layers import Conv2D, GlobalAveragePooling2D, Reshape, Dropout
 from networks.training import train_top, fine_tune
 
 from scraper.script_download_image import download_dataset
-from keras.layers import Input
+from utils import params
 
 
 def mobilenet_model(n_outputs, n_features=1024, optimizer='rmsprop', input_shape=(299, 299, 3)):
@@ -27,7 +27,7 @@ def mobilenet_model(n_outputs, n_features=1024, optimizer='rmsprop', input_shape
     x = Dropout(1e-3, name='dropout')(x)
 
     # Prediction layer, Probability per class
-    predictions = Conv2D(n_outputs, (1, 1), padding="same", activation='softmax', name="preds")(x)
+    predictions = Conv2D(n_outputs, (1, 1), padding="same", activation=params.pred_activation, name="preds")(x)
     predictions = Reshape((n_outputs,), name="pred_reshape")(predictions)
 
     # this is the model we will train
@@ -38,7 +38,7 @@ def mobilenet_model(n_outputs, n_features=1024, optimizer='rmsprop', input_shape
         layer.trainable = False
 
     # compile the model (should be done *after* setting layers to non-trainable)
-    model.compile(optimizer=optimizer, loss='categorical_crossentropy')
+    model.compile(optimizer=optimizer, loss=params.loss)
 
     model.summary()
     return model, base_model

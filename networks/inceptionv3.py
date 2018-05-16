@@ -5,6 +5,7 @@ from networks.training import train_top, fine_tune
 
 from scraper.script_download_image import download_dataset
 from keras.layers import Input
+from utils import params
 
 
 def inception_v3_model(n_outputs, n_features=1024, optimizer='rmsprop', input_shape=(299, 299, 3)):
@@ -28,7 +29,7 @@ def inception_v3_model(n_outputs, n_features=1024, optimizer='rmsprop', input_sh
     # Feature Layer
     x = Dense(n_features, activation='relu')(x)
     # Prediction layer, Probability per class
-    predictions = Dense(n_outputs, activation='softmax')(x)
+    predictions = Dense(n_outputs, activation=params.pred_activation)(x)
 
     # this is the model we will train
     model = Model(inputs=base_model.input, outputs=predictions)
@@ -38,7 +39,7 @@ def inception_v3_model(n_outputs, n_features=1024, optimizer='rmsprop', input_sh
         layer.trainable = False
 
     # compile the model (should be done *after* setting layers to non-trainable)
-    model.compile(optimizer=optimizer, loss='categorical_crossentropy')
+    model.compile(optimizer=optimizer, loss=params.loss)
 
     model.summary()
     return model, base_model

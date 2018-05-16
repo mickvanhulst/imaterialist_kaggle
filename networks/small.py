@@ -4,6 +4,7 @@ from networks.training import train_full
 
 from scraper.script_download_image import download_dataset
 from keras.layers import Input
+from utils import params
 
 
 def small_convnet(n_outputs, n_features=100, optimizer='rmsprop', input_shape=(200, 200, 3)):
@@ -39,13 +40,13 @@ def small_convnet(n_outputs, n_features=100, optimizer='rmsprop', input_shape=(2
 
     features = Dense(n_features, activation="relu")(x)
 
-    predictions = Dense(n_outputs, activation='softmax')(features)
+    predictions = Dense(n_outputs, activation=params.pred_activation)(features)
 
     # this is the model we will train
     model = Model(inputs=input_tensor, outputs=predictions)
 
     # compile the model
-    model.compile(optimizer=optimizer, loss='categorical_crossentropy')
+    model.compile(optimizer=optimizer, loss=params.loss)
 
     model.summary()
     return model, None
