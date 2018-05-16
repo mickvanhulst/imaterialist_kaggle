@@ -12,6 +12,7 @@ from urllib3.util import Retry
 import os
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+http_client = urllib3.PoolManager(50)
 
 
 class MultiLabelGenerator(ImageDataGenerator):
@@ -25,7 +26,7 @@ class MultiLabelGenerator(ImageDataGenerator):
 
 
 class DataGenerator(Iterator):
-    'Generates data for Keras'
+    """ Generates data for Keras """
 
     def __init__(self, image_data_generator, datafile, batch_size=32, dim=(224, 224), n_channels=3,
                  n_classes=228, seed=None, total_batches_seen=0, index_array=None, shuffle=True, test=False, data_path='./data/img/', save_images=False):
@@ -83,13 +84,12 @@ class DataGenerator(Iterator):
 
         return df
 
-
     def __len__(self):
-        'Denotes the number of batches per epoch'
+        """ Denotes the number of batches per epoch """
         return int(np.floor(len(self.train_df) / self.batch_size))
 
     def next(self):
-        'Generate one batch of data'
+        """ Generate one batch of data """
         with self.lock:
             index_array = next(self.index_generator)
 
@@ -97,26 +97,29 @@ class DataGenerator(Iterator):
 
     def get_image(self, url, ID):
         """
-        download image from url and reshapes it to dimension size e.g (128x128)
+        download image from url, reshapes it to dimension size e.g (128x128) and normalize it
         :returns np array of image dimension
         """
 
         # load the image from ./data/img/{ID} if it exists
         save_path = os.path.join(self.path, str(ID))
         if self.save_images and os.path.isfile(save_path):
-            return np.load(save_path)
+            image = Image.open(save_path)
+            image = np.asarray(image, dtype=K.floatx())
+            return image / 255
 
-        http = urllib3.PoolManager(retries=Retry(connect=3, read=2, redirect=3))
-        response = http.request("GET", url[0])
+        response = http_client.request("GET", url[0])
         image = Image.open(io.BytesIO(response.data))
-        image_rgb = image.convert("RGB")
-        resize_img = image_rgb.resize(self.dim)
-        image_numpy = np.asarray(resize_img, dtype=K.floatx())
+        image = image.convert("RGB")
+        image = image.resize(self.dim, Image.ANTIALIAS)
 
         if self.save_images:
-            np.save(save_path, image_numpy)
+            image.save(save_path, optimize=True, quality=85)
 
-        return image_numpy
+        image = np.asarray(image, dtype=K.floatx())
+        image /= 255
+
+        return image
 
     def _labels_to_array(self, labels):
         labels_array = np.zeros(self.n_classes)
@@ -125,7 +128,11 @@ class DataGenerator(Iterator):
 
     # Input list_IDs_temp imageIDs list of size == self.batch_size
     def _get_batches_of_transformed_samples(self, list_IDs_temp):
-        'Generates data containing batch_size samples'  # X : (n_samples, *dim, n_channels)
+        """
+        Generates data containing batch_size samples
+        :param list_IDs_temp
+        :return X: (n_samples, *dim, n_channels) y:(n_samples, n_classes)
+        """
         # Initialization
         X = np.empty((self.batch_size, *self.dim, self.n_channels), dtype=K.floatx())
 
@@ -139,12 +146,6 @@ class DataGenerator(Iterator):
                 row = self.train_df.loc[self.train_df['imageId'] == int(ID)]
                 url = row['url'].values
 
-                if not self.test:
-                    labels = row['labelId'].values
-
-                    labels = np.asarray(labels)
-                    labels = np.subtract(labels[0], 1)
-
                 image = self.get_image(url, ID)
                 # image = self.image_data_generator.random_transform(image)
                 # image = self.image_data_generator.standardize(image)
@@ -152,6 +153,11 @@ class DataGenerator(Iterator):
                 X[i, ] = image
 
                 if not self.test:
+                    labels = row['labelId'].values
+
+                    labels = np.asarray(labels)
+                    labels = np.subtract(labels[0], 1)
+
                     # Store label and class
                     y[i, ] = self._labels_to_array(labels)
             except Exception as e:

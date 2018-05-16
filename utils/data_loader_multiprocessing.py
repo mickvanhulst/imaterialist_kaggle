@@ -28,18 +28,15 @@ def download_image(pair):
     ID = pair[1]
 
     # check if the image is already there
-    save_path = os.path.join(data_dir, str(ID))
+    save_path = os.path.join(data_dir, str(ID) + ".jpg")
     if os.path.isfile(save_path):
         return
 
     response = http_pool.request("GET", url)
     image = Image.open(io.BytesIO(response.data))
     image = image.convert("RGB")
-    image = image.resize(resize_dim)
-    image = np.asarray(image, dtype=np.float32)
-    image = image / 255
-
-    np.save(save_path, image)
+    image = image.resize(resize_dim, Image.ANTIALIAS)
+    image.save(save_path, optimize=True, quality=85)
 
 
 def download_data(df_path):
@@ -58,7 +55,7 @@ def download_data(df_path):
     pairs = zip(imgs_df.values[:, 1], imgs_df.values[:, 0])
     del imgs_df
 
-    pool = multiprocessing.Pool(processes=50)  # How much can you handle tho?
+    pool = multiprocessing.Pool(processes=12)  # How much can you handle tho?
 
     with tqdm(total=n_samples, desc="Processing Dataset", unit="images") as pbar:
         for _ in pool.imap_unordered(download_image, pairs):
