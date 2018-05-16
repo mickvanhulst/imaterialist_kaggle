@@ -5,7 +5,7 @@ from keras.models import Model
 from utils import params
 
 
-def mobilenet_model(n_outputs, n_features=1024, optimizer='rmsprop', input_shape=(299, 299, 3)):
+def mobilenet_model(n_outputs, n_features=1024, optimizer='rmsprop', input_shape=(224, 224, 3)):
     """
     This method returns the mobilenet model with custom TOP layers
     All layers except the TOP are frozen (i.e. cannot be trained)
