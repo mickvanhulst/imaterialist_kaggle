@@ -48,7 +48,7 @@ class DataGenerator(Iterator):
 
         if not os.path.exists(self.path):
             os.makedirs(self.path)
-        # self.shuffle = shuffle
+        self.shuffle = shuffle
         # self.on_epoch_end()
         with open(datafile, 'r') as f:
             train_data = json.load(f)
@@ -82,7 +82,7 @@ class DataGenerator(Iterator):
 
         return self._get_batches_of_transformed_samples(index_array)
 
-    def download_image(self, url, ID):
+    def get_image(self, url, ID):
         """
         download image from url and reshapes it to dimension size e.g (128x128)
         :returns np array of image dimension
@@ -92,7 +92,7 @@ class DataGenerator(Iterator):
         save_path = os.path.join(self.path, str(ID))
         if self.save_images and os.path.isfile(save_path):
             return np.load(save_path)
-        
+
         http = urllib3.PoolManager(retries=Retry(connect=3, read=2, redirect=3))
         response = http.request("GET", url[0])
         image = Image.open(io.BytesIO(response.data))
@@ -132,7 +132,7 @@ class DataGenerator(Iterator):
                     labels = np.asarray(labels)
                     labels = np.subtract(labels[0], 1)
 
-                image = self.download_image(url, ID)
+                image = self.get_image(url, ID)
                 # image = self.image_data_generator.random_transform(image)
                 # image = self.image_data_generator.standardize(image)
 
