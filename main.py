@@ -1,5 +1,6 @@
 from batch_generator.batch_gen import MultiLabelGenerator
 from networks.inceptionv3 import inception_v3_model
+from networks.mobilenet import mobilenet_model
 from networks import training
 from evaluation.callbacks import get_callbacks
 from evaluation.submision import create_submission
@@ -9,15 +10,16 @@ from keras.models import load_model
 
 def train():
     print("Setting up Model...")
-    model_name = "inception_v3"
-    model, base_model = inception_v3_model(n_classes, input_shape=input_dim)
+    global model_name
+    global model_class
+    model, base_model = model_class(n_classes, input_shape=input_dim)
 
     print("Creating Data Generators...")
-    training_generator = MultiLabelGenerator(preprocessing_function=inception_v3_model, horizontal_flip=True)
-    training_generator = training_generator.make_datagenerator(datafile='./data/train.json')
+    training_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=True)
+    training_generator = training_generator.make_datagenerator(datafile='./data/train.json', save_images=True)
 
-    validation_generator = MultiLabelGenerator(preprocessing_function=inception_v3_model, horizontal_flip=True)
-    validation_generator = validation_generator.make_datagenerator(datafile='./data/validation.json')
+    validation_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=True)
+    validation_generator = validation_generator.make_datagenerator(datafile='./data/validation.json', save_images=True)
 
     print("Training batches:", len(training_generator))
     print("Validation batches:", len(validation_generator))
@@ -35,11 +37,11 @@ def train():
 
 def predict():
     print("Setting up Test Generator")
-    validation_generator = MultiLabelGenerator(preprocessing_function=inception_v3_model, horizontal_flip=False)
+    validation_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=False)
     validation_generator = validation_generator.make_datagenerator(datafile='./data/test.json', test=True, shuffle=False)
 
     print("Setting up Model...")
-    model_name = "inception_v3"
+    global model_name
 
     if os.path.isfile("./best_model_{}.h5".format(model_name)):
         print("Loading existing model ...")
@@ -52,7 +54,9 @@ def predict():
 
 
 if __name__ == "__main__":
+    model_name = "mobilenet"
+    model_class = mobilenet_model
     input_dim = (224, 224, 3)
     n_classes = 228
-    # train()
-    predict()
+    train()
+    # predict()
