@@ -1,8 +1,8 @@
-from evaluation.f1_score import MicroAveragedF1
+from evaluation.f1_score import AveragedF1
 from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 
 
-def get_callbacks(model_name, test_generator):
+def get_callbacks(model_name, test_generator, val_steps=None):
     return [
         ModelCheckpoint('./best_model_{}.h5'.format(model_name),
                         monitor='val_loss',
@@ -22,5 +22,5 @@ def get_callbacks(model_name, test_generator):
                       mode='min',
                       verbose=1),
 
-        MicroAveragedF1(test_generator)
+        AveragedF1(test_generator, steps=val_steps)
     ]
