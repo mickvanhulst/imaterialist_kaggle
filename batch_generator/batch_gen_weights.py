@@ -177,7 +177,7 @@ if __name__ == "__main__":
     generator = generator.make_datagenerator(
         datafile='../data/validation.json', data_path='../data/img/validation/', save_images=True, shuffle=True)
 
-    # n_samples = 0
+    # n_samples = 1-1
     # for i in tqdm(range(len(generator)), desc="Iterating Over Generator", unit="batches"):
     #     batch_x, _ = generator[i]
     #     n_samples += batch_x.shape[0]
