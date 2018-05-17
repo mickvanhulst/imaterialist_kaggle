@@ -64,10 +64,6 @@ class DataGenerator(keras.utils.Sequence):
 
         df['imageId'] = df['imageId'].apply(lambda x: int(x))
 
-        # Shape of train_df ['imageId', 'url', 'labelId'], shape: (1014544, 3)
-        # and remove columns of labels that are considered outliers
-        self.df = self.__find_infreq_classes(df)
-
         self.original_indices = df['imageId'].values
         self.epoch_indices = self.original_indices
 
@@ -82,14 +78,6 @@ class DataGenerator(keras.utils.Sequence):
         """
         if self.shuffle:
             np.random.shuffle(self.epoch_indices)
-
-    def __find_infreq_classes(self, df):
-        # Count occurences
-        # cnt_labels = df['labelId'].value_counts()
-
-        # Remove columns
-
-        return df
 
     def __len__(self):
         """ Denotes the number of batches per epoch """
