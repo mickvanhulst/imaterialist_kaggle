@@ -70,11 +70,9 @@ class DataGenerator(keras.utils.Sequence):
         if self.train:
             df["labelId"] = self._find_freq_classes(df["labelId"], label_occ_threshold)
             self.class_weights, self.binary_class_matrix = self._get_class_weights(df["labelId"])
-            factor = 1.0 / sum(self.class_weights.values())
 
-            # Normalized consists of probabilities that will be used for sampling.
-            self.class_weights_normalized = {k: (v * factor) for k, v in self.class_weights.items()}
-            print(self.class_weights_normalized)
+            # Normalize weights for sampling.
+            self.class_weights_normalized, self.cw_choices, self.cw_probs = self._normalize_class_weights()
 
         # Shape of train_df ['imageId', 'url', 'labelId'], shape: (1014544, 3)
         self.df = df
@@ -86,6 +84,17 @@ class DataGenerator(keras.utils.Sequence):
         self.n_samples = len(self.df)
 
         self.on_epoch_end()
+
+    def _normalize_class_weights(self):
+        factor = 1.0 / sum(self.class_weights.values())
+        normalized = {k: (v * factor) for k, v in self.class_weights.items()}
+        # No order in dict, so we have to iterate
+        d_choices = []
+        d_probs = []
+        for k, v in normalized.items():
+            d_choices.append(k)
+            d_probs.append(v)
+        return normalized, d_choices, d_probs
 
     def _find_freq_classes(self, series, label_occ_threshold):
         # Get labels to be ignored.
@@ -128,23 +137,14 @@ class DataGenerator(keras.utils.Sequence):
         return int(np.ceil(self.n_samples / self.batch_size))
 
     def _gen_balanced_sample(self):
-        # No order in dict, so we have to iterate
-        d_choices = []
-        d_probs = []
-        for k, v in self.class_weights_normalized.items():
-            d_choices.append(k)
-            d_probs.append(v)
-        classes = np.random.choice(d_choices, self.batch_size, p=d_probs)
+        classes = np.random.choice(self.cw_choices, self.batch_size, p=self.cw_probs)
 
         # Generate binary matrix for classes
         samples = []
         for c in classes:
             # todo: sample one index per rows var and append to list, return list.
-            rows = self.binary_class_matrix[self.binary_class_matrix[c] == 1] # self.binary_class_matrix[]
-            print(rows)
-
-        # Sample rows based on classes.
-
+            idxs = np.where(self.binary_class_matrix[:,c] == 1)
+            samples.append(np.random.choice(idxs[0]))
 
         return samples
 
