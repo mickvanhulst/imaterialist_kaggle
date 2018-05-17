@@ -3,7 +3,6 @@ from utils import params
 
 callbacks = None
 
-
 def set_callbacks(new_callbacks):
     global callbacks
     callbacks = new_callbacks
@@ -34,7 +33,6 @@ def train_top(generator_train, generator_val, model, base_model,
 
     # compile the model (should be done *after* setting layers to non-trainable)
     model.compile(optimizer=optimizer, loss=params.loss, metrics=params.metrics)
-
     history = model.fit_generator(generator=generator_train,
                                   steps_per_epoch=steps_per_epoch,
                                   epochs=epochs,

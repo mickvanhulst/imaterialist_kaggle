@@ -24,17 +24,17 @@ class MultiLabelGenerator(ImageDataGenerator):
     def __init__(self, *args, **kwargs):
         super(MultiLabelGenerator, self).__init__(*args, **kwargs)
 
-    def make_datagenerator(self, datafile, batch_size=32, dim=(224, 224), n_channels=3, n_classes=228,
-                           seed=None, shuffle=True, test=False, data_path='./data/img/', save_images=False):
+    def make_datagenerator(self, datafile, batch_size=32, dim=(224, 224), n_channels=3, n_classes=229,
+                           seed=None, shuffle=True, test=False, data_path='./data/img/', save_images=False, labels_whitelist=None):
         return DataGenerator(self, datafile, batch_size, dim, n_channels, n_classes,
-                             seed, shuffle, test, data_path, save_images)
+                             seed, shuffle, test, data_path, save_images, labels_whitelist)
 
 
 class DataGenerator(keras.utils.Sequence):
     """ Generates data for Keras """
 
     def __init__(self, image_data_generator, datafile, batch_size=32, dim=(224, 224), n_channels=3,
-                 n_classes=228, seed=None, shuffle=True, test=False, data_path='./data/img/', save_images=False):
+                 n_classes=229, seed=None, shuffle=True, test=False, data_path='./data/img/', save_images=False, labels_whitelist=None):
         """ Initialization """
         self.n = 0
         self.test = test
@@ -57,19 +57,20 @@ class DataGenerator(keras.utils.Sequence):
         with open(datafile, 'r') as f:
             train_data = json.load(f)
 
-        self.df = pd.DataFrame.from_records(train_data["images"])
-
+        df = pd.DataFrame.from_records(train_data["images"])
         if not test:
             train_labels_df = pd.DataFrame.from_records(train_data["annotations"])
-            self.df = pd.merge(self.df, train_labels_df, on="imageId", how="outer")
-            self.df["labelId"] = self.df["labelId"].apply(lambda x: [int(i) for i in x])
+            df = pd.merge(df, train_labels_df, on="imageId", how="outer")
+            df["labelId"] = df["labelId"].apply(lambda x: [int(i) for i in x])
 
-        self.df['imageId'] = self.df['imageId'].apply(lambda x: int(x))
+        df['imageId'] = df['imageId'].astype(int)#.apply(lambda x: int(x))
+
+        # Remove infrequent classes
+        if not test:
+            df["labelId"] = df["labelId"].apply(lambda x: [i for i in x if i in labels_whitelist])
 
         # Shape of train_df ['imageId', 'url', 'labelId'], shape: (1014544, 3)
-        # Remove infrequent classes
-        self.df = self.__find_infreq_classes(5000)
-        class_weights = self.__get_class_weights()
+        self.df = df
 
         self.original_indices = self.df['imageId'].values
         self.epoch_indices = self.original_indices
@@ -78,35 +79,6 @@ class DataGenerator(keras.utils.Sequence):
         self.n_samples = len(self.df)
 
         self.on_epoch_end()
-
-    def __find_infreq_classes(self, label_occ_threshold):
-        # Get labels to be ignored.
-        total_list = []
-        intermediary_var = self.df["labelId"].apply(lambda x: [total_list.append(i) for i in x])
-        count_items = Counter(total_list)
-        labels_whitelist = [x for x in count_items if count_items[x] > label_occ_threshold]
-
-        # Remove labels that are in the blacklist
-        self.df["labelId"] = self.df["labelId"].apply(lambda x: [i for i in x if i in labels_whitelist])
-
-    def __get_class_weights(self):
-        # Create one-hot encoding for the labels
-        series = self.df['labelId']
-        y = np.empty((len(series), self.n_classes), dtype=np.int)
-
-        for i, item in series.iteritems():
-            labels = np.asarray(item)
-
-            # Store label and class
-            y[i,] = self._labels_to_array(labels)
-
-        # Count per column
-        counter = y.sum(axis=0)
-
-        # Calculate and return weights
-        majority = np.max(counter)
-        class_weights = {i: 0 if counter[i] == 0 else float(majority / counter[i]) for i in range(len(counter))}
-        return class_weights
 
     def on_epoch_end(self):
         """
@@ -123,7 +95,6 @@ class DataGenerator(keras.utils.Sequence):
         """ Generate one batch of data """
         # Generate indexes of the batch
         batch_indices = self.epoch_indices[index * self.batch_size:(index + 1) * self.batch_size]
-
         return self._get_batches_of_transformed_samples(batch_indices)
 
     # def next(self):
@@ -179,7 +150,6 @@ class DataGenerator(keras.utils.Sequence):
 
         # Generate data
         for i, ID in enumerate(list_IDs_temp):
-
             try:
                 row = self.df.loc[self.df['imageId'] == int(ID)]
                 url = row['url'].values
@@ -188,11 +158,9 @@ class DataGenerator(keras.utils.Sequence):
                 X[i, ] = image
 
                 if not self.test:
-                    labels = row['labelId'].values
-
+                    # TODO: for some weird reason this is a list of lists, probably bug somewhere, but meh :P.
+                    labels = row['labelId'].values[0]
                     labels = np.asarray(labels)
-                    labels = np.subtract(labels[0], 1)
-
                     # Store label and class
                     y[i, ] = self._labels_to_array(labels)
             except Exception as e:
