@@ -9,9 +9,7 @@ from keras.layers import Flatten, Dense, Dropout
 from evaluation import f1_score
 import numpy as np
 from sklearn import metrics
-
-
-
+from collections import Counter
 
 def resnet_50():
     resnet = keras.applications.resnet50.ResNet50(include_top=False, weights='imagenet', input_shape=(224, 224, 3),
@@ -63,7 +61,6 @@ def create_callbacks(val_gen):
     ]
     return callback_list
 
-
 def main():
 
 
@@ -81,13 +78,15 @@ def main():
     # model.load_weights('./best_model1.h5')
     model.compile(optimizer=SGD(lr=0.02), loss='binary_crossentropy', metrics=['accuracy'])
     calls = create_callbacks(validation_generator)
+
     # history = model.fit_generator(generator = training_generator,
     #                               steps_per_epoch  = 1,
     #                               epochs           = 5,
     #                               verbose          = 1,
     #                               validation_data  = validation_generator,
     #                               validation_steps = 2,
-    #                               callbacks        = calls
+    #                               callbacks        = calls,
+    #                               class_weights    = class_weights
     #                               )
 
     # y_predict = model.predict_generator(validation_generator, steps = 10)
