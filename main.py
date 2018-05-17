@@ -26,7 +26,7 @@ def train():
 
     validation_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=True)
     validation_generator = validation_generator.make_datagenerator(
-        datafile='./data/train.json', data_path='./data/img/validation/', save_images=save_images)
+        datafile='./data/validation.json', data_path='./data/img/validation/', save_images=save_images)
 
     print("Training batches:", len(training_generator))
     print("Validation batches:", len(validation_generator))

@@ -10,7 +10,7 @@ from keras.preprocessing.image import ImageDataGenerator, Iterator
 from tqdm import tqdm
 from urllib3.util import Retry
 from collections import Counter
-
+import random
 
 from networks.mobilenet import mobilenet_model
 
@@ -46,6 +46,7 @@ class DataGenerator(keras.utils.Sequence):
         self.dim = dim
         self.n_channels = n_channels
         self.n_classes = n_classes
+        self.train = train
 
         # vars for saving and loading the image
         self.save_images = save_images
@@ -66,11 +67,14 @@ class DataGenerator(keras.utils.Sequence):
         df['imageId'] = df['imageId'].astype(int)
 
         # Remove infrequent classes for training dataset and save class weights.
-        if train:
+        if self.train:
             df["labelId"] = self._find_freq_classes(df["labelId"], label_occ_threshold)
-            self.class_weights = self._get_class_weights(df["labelId"])
+            self.class_weights, self.binary_class_matrix = self._get_class_weights(df["labelId"])
             factor = 1.0 / sum(self.class_weights.values())
-            self.class_weights_normalized = {k: v * factor for k, v in self.class_weights.items()}
+
+            # Normalized consists of probabilities that will be used for sampling.
+            self.class_weights_normalized = {k: (v * factor) for k, v in self.class_weights.items()}
+            print(self.class_weights_normalized)
 
         # Shape of train_df ['imageId', 'url', 'labelId'], shape: (1014544, 3)
         self.df = df
@@ -105,12 +109,12 @@ class DataGenerator(keras.utils.Sequence):
 
         # Count per column
         counter = y.sum(axis=0)
-
+        print(y.shape)
         # Calculate and return weights
         majority = np.max(counter)
         class_weights = {i: 0 if counter[i] == 0 else float(majority / counter[i]) for i in range(len(counter))}
 
-        return class_weights
+        return class_weights, y
 
     def on_epoch_end(self):
         """
@@ -123,10 +127,35 @@ class DataGenerator(keras.utils.Sequence):
         """ Denotes the number of batches per epoch """
         return int(np.ceil(self.n_samples / self.batch_size))
 
+    def _gen_balanced_sample(self):
+        # No order in dict, so we have to iterate
+        d_choices = []
+        d_probs = []
+        for k, v in self.class_weights_normalized.items():
+            d_choices.append(k)
+            d_probs.append(v)
+        classes = np.random.choice(d_choices, self.batch_size, p=d_probs)
+
+        # Generate binary matrix for classes
+        samples = []
+        for c in classes:
+            # todo: sample one index per rows var and append to list, return list.
+            rows = self.binary_class_matrix[self.binary_class_matrix[c] == 1] # self.binary_class_matrix[]
+            print(rows)
+
+        # Sample rows based on classes.
+
+
+        return samples
+
+
     def __getitem__(self, index):
         """ Generate one batch of data """
         # Generate indexes of the batch
-        batch_indices = self.epoch_indices[index * self.batch_size:(index + 1) * self.batch_size]
+        if self.train and self.shuffle:
+            batch_indices = self._gen_balanced_sample()
+        else:
+            batch_indices = self.epoch_indices[index * self.batch_size:(index + 1) * self.batch_size]
         return self._get_batches_of_transformed_samples(batch_indices)
 
     # def next(self):
