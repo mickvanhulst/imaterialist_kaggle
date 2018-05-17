@@ -12,39 +12,6 @@ import json
 import pandas as pd
 import numpy as np
 
-def find_freq_classes(series, label_occ_threshold):
-    # Get labels to be ignored.
-    total_list = []
-    for i, item in series.iteritems():
-        total_list.extend(item)
-    count_items = Counter(total_list)
-    labels_whitelist = [x for x in count_items if count_items[x] > label_occ_threshold]
-
-    return labels_whitelist
-
-def labels_to_array(labels):
-    labels_array = np.zeros(n_classes)
-    labels_array[labels] = 1
-    return labels_array
-
-def get_class_weights(series):
-    # Create binary encoding for the labels
-    y = np.empty((len(series), n_classes), dtype=np.int)
-
-    for i, item in series.iteritems():
-        labels = np.asarray(item)
-
-        # Store label and class
-        y[i,] = labels_to_array(labels)
-
-    # Count per column
-    counter = y.sum(axis=0)
-
-    # Calculate and return weights
-    majority = np.max(counter)
-    class_weights = {i: 0 if counter[i] == 0 else float(majority / counter[i]) for i in range(len(counter))}
-    return class_weights
-
 def train():
     print("Setting up Model...")
     global model_name
@@ -52,26 +19,14 @@ def train():
     global save_images
     model, base_model = model_class(n_classes, input_shape=input_dim)
 
-    # Get train data and get whitelist labels and class weights.
-    with open('./data/train.json', 'r') as f:
-        train_data = json.load(f)
-    df = pd.DataFrame.from_records(train_data["annotations"])
-    df['labelId'] = df['labelId'].apply(lambda x: [int(i) for i in x])
-
-    # Find frequent classes and create class weights (both normal and normalized)
-    labels_whitelist = find_freq_classes(df['labelId'], label_occ_threshold)
-    class_weights = get_class_weights(df['labelId'])
-    factor = 1.0 / sum(class_weights.itervalues())
-    class_weights_normalized = {k: v * factor for k, v in class_weights.iteritems()}
-
     print("Creating Data Generators...")
     training_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=True)
     training_generator = training_generator.make_datagenerator(
-        datafile='./data/train.json', data_path='./data/img/train/', save_images=save_images, labels_whitelist=labels_whitelist)
+        datafile='./data/train.json', data_path='./data/img/train/', save_images=save_images, label_occ_threshold=label_occ_threshold, train=True)
 
     validation_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=True)
     validation_generator = validation_generator.make_datagenerator(
-        datafile='./data/train.json', data_path='./data/img/validation/', save_images=save_images, labels_whitelist=labels_whitelist)
+        datafile='./data/train.json', data_path='./data/img/validation/', save_images=save_images)
 
     print("Training batches:", len(training_generator))
     print("Validation batches:", len(validation_generator))
