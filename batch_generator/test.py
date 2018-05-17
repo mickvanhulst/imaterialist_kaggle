@@ -50,7 +50,8 @@ df["labelId"] = df["labelId"].apply(lambda x: [int(i) for i in x])
 df['imageId'] = df['imageId'].apply(lambda x: int(x))
 
 df = __find_infreq_classes(df, 5000)
-class_weights = __get_class_weights(df['labelId'], 228)
+class_weights = __get_class_weights(df['labelId'], 229)
+print(class_weights)
 
 
 
