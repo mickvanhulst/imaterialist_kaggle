@@ -63,6 +63,7 @@ class DataGenerator(keras.utils.Sequence):
             df["labelId"] = df["labelId"].apply(lambda x: [int(i) for i in x])
 
         df['imageId'] = df['imageId'].apply(lambda x: int(x))
+        self.df = df
 
         self.original_indices = df['imageId'].values
         self.epoch_indices = self.original_indices
