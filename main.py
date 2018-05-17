@@ -58,9 +58,11 @@ def train():
     df = pd.DataFrame.from_records(train_data["annotations"])
     df['labelId'] = df['labelId'].apply(lambda x: [int(i) for i in x])
 
-    # Find frequent classes
+    # Find frequent classes and create class weights (both normal and normalized)
     labels_whitelist = find_freq_classes(df['labelId'], label_occ_threshold)
     class_weights = get_class_weights(df['labelId'])
+    factor = 1.0 / sum(class_weights.itervalues())
+    class_weights_normalized = {k: v * factor for k, v in class_weights.iteritems()}
 
     print("Creating Data Generators...")
     training_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=True)
