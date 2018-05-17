@@ -9,8 +9,6 @@ from PIL import Image
 from keras.preprocessing.image import ImageDataGenerator, Iterator
 from tqdm import tqdm
 from urllib3.util import Retry
-from collections import Counter
-
 
 from networks.mobilenet import mobilenet_model
 
@@ -66,14 +64,9 @@ class DataGenerator(keras.utils.Sequence):
 
         df['imageId'] = df['imageId'].apply(lambda x: int(x))
 
-        # Remove infrequent classes
-        df = self.__find_infreq_classes(df, 5000)
-        class_weights = self.__get_class_weights(228)
-
         # Shape of train_df ['imageId', 'url', 'labelId'], shape: (1014544, 3)
         # and remove columns of labels that are considered outliers
-        self.__find_infreq_classes(df, 5000)
-        self.class_weights = self.__get_class_weights()
+        self.df = self.__find_infreq_classes(df)
 
         self.original_indices = df['imageId'].values
         self.epoch_indices = self.original_indices
@@ -83,41 +76,20 @@ class DataGenerator(keras.utils.Sequence):
 
         self.on_epoch_end()
 
-    def __find_infreq_classes(self, label_occ_threshold):
-        # Get labels to be ignored.
-        total_list = []
-        intermediary_var = self.df["labelId"].apply(lambda x: [total_list.append(i) for i in x])
-        count_items = Counter(total_list)
-        labels_whitelist = [x for x in count_items if count_items[x] > label_occ_threshold]
-
-        # Remove labels that are in the blacklist
-        self.df["labelId"] = self.df["labelId"].apply(lambda x: [i for i in x if i in labels_whitelist])
-
-    def __get_class_weights(self, n_classes=228):
-        # Create one-hot encoding for the labels
-        series = self.df['labelId']
-        y = np.empty((len(series), n_classes), dtype=np.int)
-
-        for i, item in series.iteritems():
-            labels = np.asarray(item)
-
-            # Store label and class
-            y[i,] = self._labels_to_array(labels, n_classes)
-
-        # Count per column
-        counter = y.sum(axis=0)
-
-        # Calculate and return weights
-        majority = np.max(counter)
-        class_weights = {i: 0 if counter[i] == 0 else float(majority / counter[i]) for i in range(len(counter))}
-        return class_weights
-
     def on_epoch_end(self):
         """
         Create new indices for the epoch
         """
         if self.shuffle:
             np.random.shuffle(self.epoch_indices)
+
+    def __find_infreq_classes(self, df):
+        # Count occurences
+        # cnt_labels = df['labelId'].value_counts()
+
+        # Remove columns
+
+        return df
 
     def __len__(self):
         """ Denotes the number of batches per epoch """
@@ -189,6 +161,9 @@ class DataGenerator(keras.utils.Sequence):
                 url = row['url'].values
 
                 image = self.get_image(url, ID)
+                # image = self.image_data_generator.random_transform(image)
+                # image = self.image_data_generator.standardize(image)
+
                 X[i, ] = image
 
                 if not self.test:

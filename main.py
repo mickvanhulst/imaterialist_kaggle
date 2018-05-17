@@ -61,7 +61,7 @@ def predict():
 
 
 if __name__ == "__main__":
-    model_name = "mobilenet"
+    model_name = "resnet_50"
     model_class = mobilenet_model
     save_images = True
     input_dim = (224, 224, 3)

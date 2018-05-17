@@ -79,18 +79,17 @@ def main():
     model.compile(optimizer=SGD(lr=0.02), loss='binary_crossentropy', metrics=['accuracy'])
     calls = create_callbacks(validation_generator)
 
-    # history = model.fit_generator(generator = training_generator,
-    #                               steps_per_epoch  = 1,
-    #                               epochs           = 5,
-    #                               verbose          = 1,
-    #                               validation_data  = validation_generator,
-    #                               validation_steps = 2,
-    #                               callbacks        = calls,
-    #                               class_weights    = class_weights
-    #                               )
+    history = model.fit_generator(generator = training_generator,
+                                  steps_per_epoch  = 1,
+                                  epochs           = 5,
+                                  verbose          = 2,
+                                  validation_data  = validation_generator,
+                                  validation_steps = 2,
+                                  callbacks        = calls,
+                                  # class_weights    = training_generator.class_weights
+                                  )
 
     # y_predict = model.predict_generator(validation_generator, steps = 10)
-    #
 
     # for batch_x, batch_y in(training_generator):
     #     y_predict = model.predict(batch_x)
@@ -99,9 +98,6 @@ def main():
     #     log_loss = metrics.log_loss(batch_y, y_predict)
     #     print(" log loss : " ,log_loss)
 
-
-
-    #
     # y_predict = model.predict(batch_x)
     #
     # log_loss = metrics.log_loss(batch_y, y_predict)
