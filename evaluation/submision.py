@@ -20,6 +20,9 @@ def create_submission(test_generator, model, steps=None, threshold=0.5):
         f.write("image_id,label_id\n")
         for i, pred in enumerate(preds):
             positive_samples = np.argwhere(pred > threshold).flatten()
+            # In keras, they are 0-based, but we need them 1 based
+            positive_samples += 1
+
             positive_samples_string = ""
             for positive_sample in positive_samples:
                 positive_samples_string = positive_samples_string + " " + str(positive_sample)
