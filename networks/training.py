@@ -1,7 +1,12 @@
 from keras.optimizers import SGD
+
+from networks.loss import get_loss
 from utils import params
 
+import numpy as np
+
 callbacks = None
+
 
 def set_callbacks(new_callbacks):
     global callbacks
@@ -31,15 +36,19 @@ def train_top(generator_train, generator_val, model, base_model,
     for idx_layer, layer in enumerate(model.layers):
         layer.trainable = False if idx_layer < len(base_model.layers) else True
 
+    weights = np.random.random(size=(generator_train.n_classes,))
+
+    #TODO: Get actual weights in here
     # compile the model (should be done *after* setting layers to non-trainable)
-    model.compile(optimizer=optimizer, loss=params.loss, metrics=params.metrics)
+    model.compile(optimizer=optimizer, loss=get_loss(weights), metrics=params.metrics)
     history = model.fit_generator(generator=generator_train,
                                   steps_per_epoch=steps_per_epoch,
                                   epochs=epochs,
                                   verbose=verbose,
                                   validation_data=generator_val,
                                   validation_steps=validation_steps,
-                                  callbacks=callbacks
+                                  callbacks=callbacks,
+                                  max_queue_size=5
                                   )
     return history
 
