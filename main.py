@@ -6,11 +6,15 @@ from networks import training
 from evaluation.callbacks import get_callbacks
 from evaluation.submision import create_submission
 import os.path
-from utils.load_model import load_model
-from collections import Counter
-import json
-import pandas as pd
+
+import matplotlib.pyplot as plt
 import numpy as np
+
+from utils import params
+from utils.load_model import load_model
+
+from keras import optimizers
+
 
 def train():
     print("Setting up Model...")
@@ -22,24 +26,33 @@ def train():
     print("Creating Data Generators...")
     training_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=True)
     training_generator = training_generator.make_datagenerator(
-        datafile='./data/train.json', data_path='./data/img/train/', save_images=save_images, label_occ_threshold=label_occ_threshold, train=True)
+        datafile='./data/train.json', data_path='./data/img/train/', save_images=save_images,
+        label_occ_threshold=label_occ_threshold, batch_size=64, shuffle=True, train=True)
 
     validation_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=True)
     validation_generator = validation_generator.make_datagenerator(
-        datafile='./data/validation.json', data_path='./data/img/validation/', save_images=save_images)
+        datafile='./data/validation.json', data_path='./data/img/validation/', save_images=save_images,
+        batch_size=128, shuffle=True)
 
     print("Training batches:", len(training_generator))
     print("Validation batches:", len(validation_generator))
 
-    training.set_callbacks(get_callbacks(model_name, validation_generator, val_steps=3))
+    training.set_callbacks(get_callbacks(model_name, validation_generator, val_steps=38))
     
     if os.path.isfile("./best_model_{}.h5".format(model_name)):
         print("Loading existing model ...")
         model = load_model("./best_model_{}.h5".format(model_name))
 
-    history = training.train_top(generator_train=training_generator, generator_val=validation_generator,
+    optimizer = optimizers.Adam()
+
+    history = training.train_top(generator_train=training_generator, generator_val=None,
                                  model=model, base_model=base_model,
-                                 steps_per_epoch=None, epochs=10)
+                                 steps_per_epoch=50, epochs=10, optimizer=optimizer)
+    plt.bar(np.arange(len(training_generator.occurrences)), training_generator.occurrences)
+
+    plt.title("Class Occurrences During Training")
+    plt.show()
+
 
 def predict():
     global model_name
@@ -63,11 +76,11 @@ def predict():
 
 
 if __name__ == "__main__":
-    model_name = "resnet_50"
+    model_name = "mobilenet"
     model_class = mobilenet_model
     save_images = True
     input_dim = (224, 224, 3)
-    n_classes = 229
+    n_classes = params.n_classes
     label_occ_threshold = 5000
     train()
     # predict()
