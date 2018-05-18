@@ -16,6 +16,8 @@ from networks.mobilenet import mobilenet_model
 
 import os
 
+from utils import params
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 http_client = urllib3.PoolManager(50)
 
@@ -24,8 +26,9 @@ class MultiLabelGenerator(ImageDataGenerator):
     def __init__(self, *args, **kwargs):
         super(MultiLabelGenerator, self).__init__(*args, **kwargs)
 
-    def make_datagenerator(self, datafile, batch_size=32, dim=(224, 224), n_channels=3, n_classes=229,
-                           seed=None, shuffle=True, test=False, data_path='./data/img/', save_images=False, train=False, label_occ_threshold=5000):
+    def make_datagenerator(self, datafile, batch_size=32, dim=(224, 224), n_channels=3, n_classes=params.n_classes,
+                           seed=None, shuffle=True, test=False, data_path='./data/img/',
+                           save_images=False, train=False, label_occ_threshold=5000):
         return DataGenerator(self, datafile, batch_size, dim, n_channels, n_classes,
                              seed, shuffle, test, train, data_path, save_images, label_occ_threshold)
 
@@ -34,7 +37,8 @@ class DataGenerator(keras.utils.Sequence):
     """ Generates data for Keras """
 
     def __init__(self, image_data_generator, datafile, batch_size=32, dim=(224, 224), n_channels=3,
-                 n_classes=229, seed=None, shuffle=True, test=False, train=False, data_path='./data/img/', save_images=False, label_occ_threshold=5000):
+                 n_classes=params.n_classes, seed=None, shuffle=True, test=False, train=False, data_path='./data/img/',
+                 save_images=False, label_occ_threshold=5000):
         """ Initialization """
         self.n = 0
         self.test = test
@@ -51,6 +55,8 @@ class DataGenerator(keras.utils.Sequence):
         # vars for saving and loading the image
         self.save_images = save_images
         self.path = data_path
+
+        self.occurrences = np.zeros((n_classes,), dtype=int)
         if not os.path.exists(self.path):
             os.makedirs(self.path)
 
@@ -64,7 +70,7 @@ class DataGenerator(keras.utils.Sequence):
             df = pd.merge(df, train_labels_df, on="imageId", how="outer")
             df["labelId"] = df["labelId"].apply(lambda x: [int(i) for i in x])
 
-        df['imageId'] = df['imageId'].astype(int)
+        df['imageId'] = df['imageId'].astype(int, copy=False)
 
         # Remove infrequent classes for training dataset and save class weights.
         if self.train:
@@ -118,7 +124,7 @@ class DataGenerator(keras.utils.Sequence):
 
         # Count per column
         counter = y.sum(axis=0)
-        print(y.shape)
+
         # Calculate and return weights
         majority = np.max(counter)
         class_weights = {i: 0 if counter[i] == 0 else float(majority / counter[i]) for i in range(len(counter))}
@@ -148,11 +154,10 @@ class DataGenerator(keras.utils.Sequence):
 
         return samples
 
-
     def __getitem__(self, index):
         """ Generate one batch of data """
         # Generate indexes of the batch
-        if self.train and self.shuffle:
+        if self.train:
             batch_indices = self._gen_balanced_sample()
         else:
             batch_indices = self.epoch_indices[index * self.batch_size:(index + 1) * self.batch_size]
@@ -191,8 +196,17 @@ class DataGenerator(keras.utils.Sequence):
         return image / 255
 
     def _labels_to_array(self, labels):
-        labels_array = np.zeros(self.n_classes)
-        labels_array[labels] = 1
+        """
+        Converts a list of labels to a one-hot encoded array
+        """
+        labels_array = np.zeros((self.n_classes,), dtype=int)
+        labels = np.array(labels)
+
+        # Labels are 1-based, so do - 1
+        labels_array[labels - 1] = 1
+        # Bookkeeping
+        self.occurrences += labels_array
+
         return labels_array
 
     # Input list_IDs_temp imageIDs list of size == self.batch_size
@@ -217,7 +231,7 @@ class DataGenerator(keras.utils.Sequence):
                 X[i, ] = image
 
                 if not self.test:
-                    # TODO: for some weird reason this is a list of lists, probably bug somewhere, but meh :P.
+                    # The 0 indexing is because row is a mini dataframe, so it is two dimensional.
                     labels = row['labelId'].values[0]
                     labels = np.asarray(labels)
                     # Store label and class
