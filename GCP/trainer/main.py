@@ -17,7 +17,7 @@ from tensorflow.python.lib.io import file_io
 
 from keras import optimizers
 
-def train(train_files='gs://mlip/train.json', job_dir='gs://mlip-test/mlip-test15',
+def train(train_files='gs://mlip/train.json', job_dir='gs://mlip/',
           validation_files='gs://mlip/validation.json', **args):
     print("Setting up Model...")
     global model_name
