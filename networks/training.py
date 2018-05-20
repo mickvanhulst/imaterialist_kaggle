@@ -1,16 +1,23 @@
 from keras.optimizers import SGD
+
+from networks.loss import get_loss
 from utils import params
 
+import numpy as np
+from tensorflow.python.lib.io import file_io
+
+
 callbacks = None
+
 
 def set_callbacks(new_callbacks):
     global callbacks
     callbacks = new_callbacks
 
 
-def train_top(generator_train, generator_val, model, base_model,
+def train_top(generator_train, generator_val, model, base_model, job_dir='gs://mlip/',
               steps_per_epoch=None, epochs=5, verbose=1,
-              optimizer='rmsprop', validation_steps=None):
+              optimizer='rmsprop', validation_steps=None, GCP=False):
     """
     Trains the top layers of a specified model by freezing ALL base_model layers
     :param generator_train:
@@ -31,16 +38,31 @@ def train_top(generator_train, generator_val, model, base_model,
     for idx_layer, layer in enumerate(model.layers):
         layer.trainable = False if idx_layer < len(base_model.layers) else True
 
+    weights = np.random.random(size=(generator_train.n_classes,))
+
+    #TODO: Get actual weights in here
     # compile the model (should be done *after* setting layers to non-trainable)
-    model.compile(optimizer=optimizer, loss=params.loss, metrics=params.metrics)
+    model.compile(optimizer=optimizer, loss=get_loss(weights), metrics=params.metrics)
     history = model.fit_generator(generator=generator_train,
                                   steps_per_epoch=steps_per_epoch,
                                   epochs=epochs,
                                   verbose=verbose,
                                   validation_data=generator_val,
                                   validation_steps=validation_steps,
-                                  callbacks=callbacks
+                                  callbacks=callbacks,
+                                  max_queue_size=5
                                   )
+    # TODO: test if this works
+    # if GCP:
+    #     # Save model
+    #     # Save the model locally
+    #     model.save('model.h5')
+    #
+    #     # Save model.h5 on to google storage
+    #     with file_io.FileIO('model.h5', mode='r') as input_f:
+    #         with file_io.FileIO(job_dir + '/model.h5', mode='w+') as output_f:
+    #             output_f.write(input_f.read())
+
     return history
 
 

@@ -23,13 +23,14 @@ class AveragedF1(Callback):
 
     def on_epoch_end(self, epoch, logs={}):
         if not self.steps:
-            y_true = self.val_gen.train_df['labelId']
-            y_pred = self.model.predict_generator(self.val_gen, verbose=self.params['verbose'])
+            y_true = self.val_gen.df['labelId'].values
+            y_true = np.array([self.val_gen._labels_to_array(row) for row in y_true])
+            y_pred = self.model.predict_generator(self.val_gen, verbose=self.params['verbose'], max_queue_size=5)
         else:
             y_true = np.zeros(self.val_gen.batch_size * self.steps * self.val_gen.n_classes)
             y_pred = np.zeros(self.val_gen.batch_size * self.steps * self.val_gen.n_classes)
             for step in tqdm(range(self.steps), desc="F1-Score", disable=not self.params['verbose']):
-                n_x, n_y = self.val_gen.next()
+                n_x, n_y = self.val_gen[step]
                 y_true[step * self.val_gen.batch_size * self.val_gen.n_classes:
                        (step + 1) * self.val_gen.batch_size * self.val_gen.n_classes] \
                     = n_y.flatten()
