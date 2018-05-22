@@ -163,13 +163,6 @@ class DataGenerator(keras.utils.Sequence):
             batch_indices = self.epoch_indices[index * self.batch_size:(index + 1) * self.batch_size]
         return self._get_batches_of_transformed_samples(batch_indices)
 
-    # def next(self):
-    #     """ Generate one batch of data """
-    #     with self.lock:
-    #         index_array = next(self.index_generator)
-    #
-    #     return self._get_batches_of_transformed_samples(index_array)
-
     def get_image(self, url, ID):
         """
         download image from url, reshapes it to dimension size e.g (128x128) and normalize it
