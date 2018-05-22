@@ -214,6 +214,7 @@ class DataGenerator(keras.utils.Sequence):
         :return X: (n_samples, *dim, n_channels) y:(n_samples, n_classes)
         """
         # Initialization
+        #todo: GCP uses python 2, starred expressions don't work in Python2
         X = np.empty((len(list_IDs_temp), *self.dim, self.n_channels), dtype=K.floatx())
 
         if not self.test:

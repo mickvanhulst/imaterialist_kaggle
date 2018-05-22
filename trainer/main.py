@@ -87,8 +87,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     # Input Arguments
     parser.add_argument(
-      '--trainer',
-      help='Ask user if training on trainer or not',
+      '--GCP',
+      help='Ask user if training on GCP or not',
       required=True
     )
     # parser.add_argument(
