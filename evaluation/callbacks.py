@@ -3,24 +3,38 @@ from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 
 
 def get_callbacks(model_name, test_generator, val_steps=None):
-    return [
-        AveragedF1(test_generator, steps=val_steps),
 
+    callbacks = []
+
+    if test_generator is not None:
+        callbacks.append(
+            AveragedF1(test_generator, steps=val_steps))
+        metric = "F1"
+    else:
+        metric = "categorical_accuracy"
+
+    callbacks.append(
         ModelCheckpoint('./best_model_{}.h5'.format(model_name),
-                        monitor='F1',
+                        monitor=metric,
                         verbose=1,
                         save_best_only=True,
                         mode='max',
-                        period=1),
+                        period=1)
+    )
 
-        ReduceLROnPlateau(monitor='F1',
+    callbacks.append(
+        ReduceLROnPlateau(monitor=metric,
                           patience=1,
                           verbose=1,
-                          mode='max'),
+                          mode='max')
+    )
 
-        EarlyStopping(monitor='F1',
+    callbacks.append(
+        EarlyStopping(monitor=metric,
                       min_delta=0.0001,
                       patience=5,
                       mode='max',
                       verbose=1)
-    ]
+    )
+
+    return callbacks
