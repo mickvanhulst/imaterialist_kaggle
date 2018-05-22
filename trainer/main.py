@@ -5,7 +5,7 @@ from evaluation.callbacks import get_callbacks
 from evaluation.submision import create_submission
 import os.path
 
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import numpy as np
 
 from utils import params
@@ -15,7 +15,7 @@ from tensorflow.python.lib.io import file_io
 
 from keras import optimizers
 
-def main(GCP):#, job_dir):
+def main(GCP, job_dir):
     print("Setting up Model...")
     global model_name
     global model_class
@@ -57,10 +57,10 @@ def main(GCP):#, job_dir):
                                  steps_per_epoch=50, epochs=10, optimizer=optimizer, GCP=False)
 
 
-    plt.bar(np.arange(len(training_generator.occurrences)), training_generator.occurrences)
-
-    plt.title("Class Occurrences During Training")
-    plt.show()
+    # plt.bar(np.arange(len(training_generator.occurrences)), training_generator.occurrences)
+    #
+    # plt.title("Class Occurrences During Training")
+    # plt.show()
 
 
 def predict():
@@ -91,11 +91,11 @@ if __name__ == '__main__':
       help='Ask user if training on GCP or not',
       required=True
     )
-    # parser.add_argument(
-    #   '--job-dir',
-    #   help='Job directory',
-    #   required=True
-    # )
+    parser.add_argument(
+      '--job-dir',
+      help='Job directory',
+      required=True
+    )
     args = parser.parse_args()
 
     model_name = "mobilenet"
@@ -104,5 +104,5 @@ if __name__ == '__main__':
     input_dim = (224, 224, 3)
     n_classes = params.n_classes
     label_occ_threshold = 5000
-
-    main(args.GCP)#, args.job_dir)
+    #todo: GCP 0 is not getting set correctly as GCP tries to find ./data/train.json instead of the gs:// path
+    main(args.GCP, args.job_dir)
