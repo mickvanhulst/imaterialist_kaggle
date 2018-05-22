@@ -6,11 +6,8 @@ import numpy as np
 import pandas as pd
 import urllib3
 from PIL import Image
-from keras.preprocessing.image import ImageDataGenerator, Iterator
-from tqdm import tqdm
-from urllib3.util import Retry
+from keras.preprocessing.image import ImageDataGenerator
 from collections import Counter
-import random
 
 from networks.mobilenet import mobilenet_model
 

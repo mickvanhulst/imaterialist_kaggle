@@ -1,7 +1,5 @@
 from batch_generator.batch_gen_weights import MultiLabelGenerator
-from networks.inceptionv3 import inception_v3_model
 from networks.mobilenet import mobilenet_model
-from networks.resnet_50 import resnet_50_model
 from networks import training
 from evaluation.callbacks import get_callbacks
 from evaluation.submision import create_submission
@@ -14,7 +12,6 @@ from utils import params
 from utils.load_model import load_model
 
 from keras import optimizers
-
 
 def train():
     print("Setting up Model...")
