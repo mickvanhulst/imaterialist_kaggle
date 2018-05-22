@@ -27,4 +27,4 @@ def create_submission(test_generator, model, steps=None, threshold=0.5):
             for positive_sample in positive_samples:
                 positive_samples_string = positive_samples_string + " " + str(positive_sample)
 
-            f.write("{},{}\n".format(i, positive_samples_string))
+            f.write("{}, {}\n".format(i+1, positive_samples_string))
