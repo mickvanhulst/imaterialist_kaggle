@@ -22,10 +22,10 @@ def main(GCP, job_dir):
     global save_images
     model, base_model = model_class(n_classes, input_shape=input_dim)
 
-    if GCP == 0:
+    if GCP:
         data_folder = 'gs://mlip/'
     else:
-        data_folder = './data/'
+        data_folder = '../data/'
 
     print("Creating Data Generators...")
     training_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=True)
@@ -83,20 +83,25 @@ def predict():
 
     create_submission(validation_generator, model, steps=1)
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     # Input Arguments
     parser.add_argument(
-      '--GCP',
-      help='Ask user if training on GCP or not',
-      required=True
+        '--GCP',
+        help='Ask user if training on GCP or not',
+        action='store_true',
+        default=False
     )
     parser.add_argument(
-      '--job-dir',
-      help='Job directory',
-      required=True
+        '--job-dir',
+        help='Job directory',
+        required=False
     )
     args = parser.parse_args()
+
+    if args.GCP and not args.job_dir:
+        parser.error("--job-dir should be set if --GCP")
 
     model_name = "mobilenet"
     model_class = mobilenet_model
