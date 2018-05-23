@@ -106,7 +106,9 @@ if __name__ == '__main__':
     save_images = True
     input_dim = (224, 224, 3)
     n_classes = params.n_classes
-    #todo: repeat this for lower than, by making thresholdsmaller=True
+    #todo: 1 Thresholdsmaller = False, so everything occuring 100.000 or higher.
+    #todo: 2 repeat this for lower than, by making thresholdsmaller=True
+    #todo: 3 last repeat is change label_occ_threshold to 500 and make thresholdsmaller=False
     label_occ_threshold = 100000
     main(args.GCP, args.job_dir)
     #predict()
