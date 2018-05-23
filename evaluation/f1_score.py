@@ -1,5 +1,5 @@
 from keras.callbacks import Callback
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score, precision_recall_curve
 #from IPython.display import clear_output
 #import matplotlib.pyplot as plt
 import numpy as np
@@ -29,7 +29,7 @@ class AveragedF1(Callback):
         else:
             y_true = np.zeros(self.val_gen.batch_size * self.steps * self.val_gen.n_classes)
             y_pred = np.zeros(self.val_gen.batch_size * self.steps * self.val_gen.n_classes)
-            for step in tqdm(range(self.steps), desc="F1-Score", disable=not self.params['verbose']):
+            for step in tqdm(range(self.steps), desc="F1-Score", disable=not self.params['verbose'], unit="batches"):
                 n_x, n_y = self.val_gen[step]
                 y_true[step * self.val_gen.batch_size * self.val_gen.n_classes:
                        (step + 1) * self.val_gen.batch_size * self.val_gen.n_classes] \
@@ -38,12 +38,15 @@ class AveragedF1(Callback):
                        (step + 1) * self.val_gen.batch_size * self.val_gen.n_classes] \
                     = self.model.predict(n_x).flatten()
 
-        y_pred[y_pred > self.threshold] = 1
-        y_pred[y_pred <= self.threshold] = 0
-        score = f1_score(y_true, y_pred, average='macro')
-        self.f1_scores.append(score)
-        logs['F1'] = score
-        print('F1-score: {}'.format(score))
+        precision, recall, thresholds = precision_recall_curve(y_true, y_pred)
+        F1 = 2 * (precision * recall) / (precision + recall)
+        best_idx = np.argmax(F1)
+        F1 = F1[best_idx]
+        self.f1_scores.append(F1)
+
+        logs['threshold'] = thresholds[best_idx]
+        logs['F1'] = F1
+        print('F1-score: {}\nThreshold: {}'.format(logs['F1'], logs['threshold']))
 
     def on_train_end(self, logs={}):
         self.plot()
