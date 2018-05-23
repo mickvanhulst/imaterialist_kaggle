@@ -203,9 +203,8 @@ class DataGenerator(keras.utils.Sequence):
         labels_array = np.zeros((self.n_classes,), dtype=int)
         labels = np.array(labels)
 
-
         # Labels are 1-based, so do - 1
-        if (len(labels) > 0):
+        if len(labels) > 0:
             labels_array[labels - 1] = 1
 
         # Bookkeeping
