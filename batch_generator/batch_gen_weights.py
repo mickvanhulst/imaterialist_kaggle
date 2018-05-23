@@ -8,6 +8,7 @@ import urllib3
 from PIL import Image
 from keras.preprocessing.image import ImageDataGenerator
 from collections import Counter
+from tensorflow.python.lib.io import file_io
 
 from networks.mobilenet import mobilenet_model
 
@@ -25,9 +26,9 @@ class MultiLabelGenerator(ImageDataGenerator):
 
     def make_datagenerator(self, datafile, batch_size=32, dim=(224, 224), n_channels=3, n_classes=params.n_classes,
                            seed=None, shuffle=True, test=False, data_path='./data/img/',
-                           save_images=False, train=False, label_occ_threshold=5000):
+                           save_images=False, train=False, label_occ_threshold=5000, GCP=True):
         return DataGenerator(self, datafile, batch_size, dim, n_channels, n_classes,
-                             seed, shuffle, test, train, data_path, save_images, label_occ_threshold)
+                             seed, shuffle, test, train, data_path, save_images, label_occ_threshold, GCP)
 
 
 class DataGenerator(keras.utils.Sequence):
@@ -35,7 +36,7 @@ class DataGenerator(keras.utils.Sequence):
 
     def __init__(self, image_data_generator, datafile, batch_size=32, dim=(224, 224), n_channels=3,
                  n_classes=params.n_classes, seed=None, shuffle=True, test=False, train=False, data_path='./data/img/',
-                 save_images=False, label_occ_threshold=5000):
+                 save_images=False, label_occ_threshold=5000, GCP=True):
         """ Initialization """
         self.n = 0
         self.test = test
@@ -57,8 +58,12 @@ class DataGenerator(keras.utils.Sequence):
         if not os.path.exists(self.path):
             os.makedirs(self.path)
 
-        with open(datafile, 'r') as f:
-            train_data = json.load(f)
+        if GCP:
+            with file_io.FileIO(datafile, 'r') as f:
+                train_data = json.load(f)
+        else:
+            with open(datafile, 'r') as f:
+                train_data = json.load(f)
 
         df = pd.DataFrame.from_records(train_data["images"])
 

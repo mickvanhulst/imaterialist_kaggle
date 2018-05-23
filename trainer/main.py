@@ -23,7 +23,7 @@ def main(GCP, job_dir):
     model, base_model = model_class(n_classes, input_shape=input_dim)
 
     if GCP:
-        data_folder = 'gs://mlip/'
+        data_folder = 'gs://mlip-test/'
     else:
         data_folder = '../data/'
 
@@ -50,12 +50,9 @@ def main(GCP, job_dir):
     optimizer = optimizers.Adam()
 
     #todo: Add job_dir for saving model.
-    #todo: add to packages in setup.py?
-    #todo: trainer cannot find the modules that it's referencing above (MultiLabelGenerator etc., how to add those?)
     history = training.train_top(generator_train=training_generator, generator_val=None,
                                  model=model, base_model=base_model,
-                                 steps_per_epoch=50, epochs=10, optimizer=optimizer, GCP=False)
-
+                                 steps_per_epoch=5, epochs=1, optimizer=optimizer, GCP=GCP, job_dir=job_dir)
 
     # plt.bar(np.arange(len(training_generator.occurrences)), training_generator.occurrences)
     #
@@ -96,6 +93,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--job-dir',
         help='Job directory',
+        default='./',
         required=False
     )
     args = parser.parse_args()
@@ -109,5 +107,4 @@ if __name__ == '__main__':
     input_dim = (224, 224, 3)
     n_classes = params.n_classes
     label_occ_threshold = 5000
-    #todo: GCP 0 is not getting set correctly as GCP tries to find ./data/train.json instead of the gs:// path
     main(args.GCP, args.job_dir)

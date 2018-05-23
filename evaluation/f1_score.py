@@ -49,7 +49,8 @@ class AveragedF1(Callback):
         self.plot()
 
     def plot(self):
-        print('Had to disable this for GCP, can save image later.')
+        a = 1
+        #todo: 'Had to disable this for GCP, can save graphs as imags
         # clear_output()
         # plt.plot(self.f1_scores)
         # plt.ylim([0, 1])

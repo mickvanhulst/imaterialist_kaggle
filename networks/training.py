@@ -16,7 +16,7 @@ def set_callbacks(new_callbacks):
 
 def train_top(generator_train, generator_val, model, base_model,
               steps_per_epoch=None, epochs=5, verbose=1,
-              optimizer='rmsprop', validation_steps=None, GCP=False, weights=None, loss=weighted_mean_squared_error):
+              optimizer='rmsprop', validation_steps=None, GCP=False, weights=None, loss=weighted_mean_squared_error, job_dir='./'):
     """
     Trains the top layers of a specified model by freezing ALL base_model layers
     :param generator_train:
@@ -52,15 +52,15 @@ def train_top(generator_train, generator_val, model, base_model,
                                   max_queue_size=5
                                   )
     # TODO: test if this works
-    # if GCP:
-    #     # Save model
-    #     # Save the model locally
-    #     model.save('model.h5')
-    #
-    #     # Save model.h5 on to google storage
-    #     with file_io.FileIO('model.h5', mode='r') as input_f:
-    #         with file_io.FileIO(job_dir + '/model.h5', mode='w+') as output_f:
-    #             output_f.write(input_f.read())
+    if GCP:
+        # Save model
+        # Save the model locally
+        model.save('model.h5')
+
+        # Save model.h5 on to google storage
+        with file_io.FileIO('model.h5', mode='r') as input_f:
+            with file_io.FileIO(job_dir + '/model.h5', mode='w+') as output_f:
+                output_f.write(input_f.read())
 
     return history
 
