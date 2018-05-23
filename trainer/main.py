@@ -23,7 +23,7 @@ def main(GCP, job_dir):
     model, base_model = model_class(n_classes, input_shape=input_dim)
 
     if GCP:
-        data_folder = 'gs://mlip-test/'
+        data_folder = 'gs://mlip/'
     else:
         data_folder = './data/'
 
