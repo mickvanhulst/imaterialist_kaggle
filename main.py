@@ -15,6 +15,7 @@ from utils.load_model import load_model
 
 from keras import optimizers
 
+
 def train():
     print("Setting up Model...")
     global model_name
@@ -29,16 +30,16 @@ def train():
         datafile='./data/train.json', data_path='./data/img/train/', save_images=save_images,
         label_occ_threshold=label_occ_threshold, batch_size=32, shuffle=True, train=True)
 
-    # validation_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=True)
-    # validation_generator = validation_generator.make_datagenerator(
-    #     datafile='./data/validation.json', data_path='./data/img/validation/', save_images=save_images,
-    #     batch_size=128, shuffle=True)
+    validation_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=True)
+    validation_generator = validation_generator.make_datagenerator(
+        datafile='./data/validation.json', data_path='./data/img/validation/', save_images=save_images,
+        batch_size=32, shuffle=True)
 
     print("Training batches:", len(training_generator))
     # print("Validation batches:", len(validation_generator))
 
     # About half of the validation set will be used per epoch
-    training.set_callbacks(get_callbacks(model_name, None))
+    training.set_callbacks(get_callbacks(model_name, validation_generator, val_steps=10))
     
     if os.path.isfile("./best_model_{}.h5".format(model_name)):
         print("Loading existing model ...")
@@ -51,25 +52,33 @@ def train():
     """
     optimizer = optimizers.Adam(lr=1e-3)
 
-    weights = np.loadtxt("class_weights.csv", delimiter=',')
-    # weights = np.ones((228,))
+    # weights = np.loadtxt("class_weights.csv", delimiter=',')
+    weights = np.ones((228,))
+    weights[65] = 0.25
 
     # history = training.train_top(generator_train=training_generator, generator_val=None,
-    #                              model=model, base_model=base_model,
-    #                              steps_per_epoch=50, epochs=10, optimizer=optimizer)
+    #                              model=model, base_model=base_model, loss=loss.weighted_categorical_crossentropy,
+    #                              steps_per_epoch=1, epochs=10, optimizer=optimizer)
 
     # history = training.fine_tune(generator_train=training_generator, generator_val=None,
-    #                              model=model, idx_lower=55,
-    #                              steps_per_epoch=50, epochs=10, optimizer=optimizer)
+    #                              model=model, idx_lower=55, loss=loss.weighted_categorical_crossentropy,
+    #                              steps_per_epoch=2, epochs=10, optimizer=optimizer)
 
     history = training.train_full(generator_train=training_generator, generator_val=None,
-                                  model=model, weights=weights, loss=loss.weighted_mean_squared_error,
-                                  steps_per_epoch=50, epochs=15, optimizer=optimizer)
+                                  model=model, weights=weights, loss=loss.weighted_categorical_crossentropy,
+                                  steps_per_epoch=10, epochs=2, optimizer=optimizer)
 
     plt.bar(np.arange(len(training_generator.occurrences)), training_generator.occurrences)
 
     plt.title("Class Occurrences During Training")
     plt.show()
+
+    print(history)
+    F1 = history['F1']
+    thresholds = history['threshold']
+    print("Best F1:", F1[np.argmax(F1)])
+    print("Best Thresholds:", thresholds[np.argmax(F1)])
+
 
 
 def predict():
@@ -97,9 +106,9 @@ def predict():
 if __name__ == "__main__":
     model_name = "mobilenet"
     model_class = mobilenet_model
-    save_images = True
+    save_images = False
     input_dim = (224, 224, 3)
     n_classes = params.n_classes
     label_occ_threshold = 5000
-    # train()
-    predict()
+    train()
+    # predict()
