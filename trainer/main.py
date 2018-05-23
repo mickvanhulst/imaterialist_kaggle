@@ -32,7 +32,7 @@ def main(GCP, job_dir):
     training_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=True)
     training_generator = training_generator.make_datagenerator(
         datafile='{}train.json'.format(data_folder), data_path='{}img/train/'.format(data_folder), save_images=save_images,
-        label_occ_threshold=label_occ_threshold, batch_size=64, shuffle=True, train=True)
+        label_occ_threshold=label_occ_threshold, batch_size=64, shuffle=True, train=True, thresholdsmaller=False)
 
     validation_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=True)
     validation_generator = validation_generator.make_datagenerator(
@@ -106,6 +106,7 @@ if __name__ == '__main__':
     save_images = True
     input_dim = (224, 224, 3)
     n_classes = params.n_classes
-    label_occ_threshold = 5000
+    #todo: repeat this for lower than, by making thresholdsmaller=True
+    label_occ_threshold = 100000
     main(args.GCP, args.job_dir)
     #predict()

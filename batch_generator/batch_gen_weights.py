@@ -26,9 +26,9 @@ class MultiLabelGenerator(ImageDataGenerator):
 
     def make_datagenerator(self, datafile, batch_size=32, dim=(224, 224), n_channels=3, n_classes=params.n_classes,
                            seed=None, shuffle=True, test=False, data_path='./data/img/',
-                           save_images=False, train=False, label_occ_threshold=5000, GCP=True):
+                           save_images=False, train=False, label_occ_threshold=5000, GCP=True, thresholdsmaller=True):
         return DataGenerator(self, datafile, batch_size, dim, n_channels, n_classes,
-                             seed, shuffle, test, train, data_path, save_images, label_occ_threshold, GCP)
+                             seed, shuffle, test, train, data_path, save_images, label_occ_threshold, GCP, thresholdsmaller)
 
 
 class DataGenerator(keras.utils.Sequence):
@@ -113,11 +113,10 @@ class DataGenerator(keras.utils.Sequence):
             total_list.extend(item)
         count_items = Counter(total_list)
 
-
         if self.thresholdsmaller:
-            labels_whitelist = [x for x in count_items if count_items[x] <= label_occ_threshold]
+            labels_whitelist = [x for x in count_items if (count_items[x] <= label_occ_threshold) & (count_items[x] > 500)]
         else:
-            labels_whitelist = [x for x in count_items if count_items[x] > label_occ_threshold]
+            labels_whitelist = [x for x in count_items if (count_items[x] > label_occ_threshold) & (count_items[x] > 500)]
 
         return series.apply(lambda x: [i for i in x if i in labels_whitelist])
 
