@@ -6,11 +6,8 @@ import numpy as np
 import pandas as pd
 import urllib3
 from PIL import Image
-from keras.preprocessing.image import ImageDataGenerator, Iterator
-from tqdm import tqdm
-from urllib3.util import Retry
+from keras.preprocessing.image import ImageDataGenerator
 from collections import Counter
-import random
 
 from networks.mobilenet import mobilenet_model
 
@@ -210,6 +207,7 @@ class DataGenerator(keras.utils.Sequence):
         :return X: (n_samples, *dim, n_channels) y:(n_samples, n_classes)
         """
         # Initialization
+        #todo: GCP uses python 2, starred expressions don't work in Python2. Changed to python 3 in config.yaml :))
         X = np.empty((len(list_IDs_temp), *self.dim, self.n_channels), dtype=K.floatx())
 
         if not self.test:

@@ -14,7 +14,7 @@ def set_callbacks(new_callbacks):
     callbacks = new_callbacks
 
 
-def train_top(generator_train, generator_val, model, base_model, job_dir='gs://mlip/',
+def train_top(generator_train, generator_val, model, base_model,
               steps_per_epoch=None, epochs=5, verbose=1,
               optimizer='rmsprop', validation_steps=None, GCP=False, weights=None, loss=weighted_mean_squared_error):
     """

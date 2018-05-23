@@ -1,9 +1,9 @@
 from keras.callbacks import Callback
 from sklearn.metrics import f1_score
-from IPython.display import clear_output
-import matplotlib.pyplot as plt
+#from IPython.display import clear_output
+#import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.pylab import ion
+#from matplotlib.pylab import ion
 from tqdm import tqdm
 
 
@@ -49,10 +49,11 @@ class AveragedF1(Callback):
         self.plot()
 
     def plot(self):
-        clear_output()
-        plt.plot(self.f1_scores)
-        plt.ylim([0, 1])
-        plt.title("F1 Score")
-        plt.ylabel("F1")
-        plt.xlabel("epoch")
-        plt.show()
+        print('Had to disable this for GCP, can save image later.')
+        # clear_output()
+        # plt.plot(self.f1_scores)
+        # plt.ylim([0, 1])
+        # plt.title("F1 Score")
+        # plt.ylabel("F1")
+        # plt.xlabel("epoch")
+        # plt.show()
