@@ -60,6 +60,7 @@ def main(GCP, job_dir):
     # plt.show()
 
 
+
 def predict():
     global model_name
     global model_class
@@ -78,8 +79,7 @@ def predict():
         print("Model 'best_model_{}.h5' not found!".format(model_name))
         raise Exception("You need to train a model before you can make predictions.")
 
-    create_submission(validation_generator, model, steps=1)
-
+    create_submission(validation_generator, model, steps=None)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -108,3 +108,4 @@ if __name__ == '__main__':
     n_classes = params.n_classes
     label_occ_threshold = 5000
     main(args.GCP, args.job_dir)
+    #predict()
