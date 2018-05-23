@@ -41,7 +41,7 @@ def main(GCP, job_dir):
     print("Training batches:", len(training_generator))
     print("Validation batches:", len(validation_generator))
 
-    #training.set_callbacks(get_callbacks(model_name, validation_generator, val_steps=38))
+    training.set_callbacks(get_callbacks(job_dir, GCP, validation_generator, val_steps=38))
 
     # if os.path.isfile("./best_model_{}.h5".format(model_name)):
     #     print("Loading existing model ...")
