@@ -1,5 +1,5 @@
 from batch_generator.batch_gen_weights import MultiLabelGenerator
-from networks import training
+from networks import training, loss
 from networks.inceptionv3 import inception_v3_model
 from networks.mobilenet import mobilenet_model
 from evaluation.callbacks import get_callbacks
@@ -16,6 +16,7 @@ from tensorflow.python.lib.io import file_io
 
 from keras import optimizers
 
+
 def main(GCP, job_dir):
     print("Setting up Model...")
     global model_name
@@ -31,38 +32,46 @@ def main(GCP, job_dir):
     print("Creating Data Generators...")
     training_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=True)
     training_generator = training_generator.make_datagenerator(
-        datafile='{}train.json'.format(data_folder), data_path='{}img/train/'.format(data_folder), save_images=save_images,
-        label_occ_threshold=label_occ_threshold, batch_size=64, shuffle=True, train=True, thresholdsmaller=False)
+        datafile='{}train.json'.format(data_folder), data_path='{}img/train/'.format(data_folder),
+        save_images=save_images, label_occ_threshold=label_occ_threshold, batch_size=128,
+        shuffle=True, train=True, thresholdsmaller=False)
 
     validation_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=True)
     validation_generator = validation_generator.make_datagenerator(
-        datafile='{}validation.json'.format(data_folder), data_path='{}img/validation/'.format(data_folder), save_images=save_images,
-        batch_size=128, shuffle=True)
+        datafile='{}validation.json'.format(data_folder), data_path='{}img/validation/'.format(data_folder),
+        save_images=save_images, batch_size=128, shuffle=True)
 
     print("Training batches:", len(training_generator))
     print("Validation batches:", len(validation_generator))
 
-    training.set_callbacks(get_callbacks(job_dir, GCP, validation_generator, val_steps=38))
+    training.set_callbacks(
+        get_callbacks(job_dir, validation_generator, GCP=GCP, val_steps=len(validation_generator)-1, verbose=1)
+    )
 
     # if os.path.isfile("./best_model_{}.h5".format(model_name)):
     #     print("Loading existing model ...")
     #     model = load_model("./best_model_{}.h5".format(model_name))
 
-    optimizer = optimizers.Adam()
+    optimizer = optimizers.Adam(lr=1e-3)
 
     history = training.train_top(generator_train=training_generator, generator_val=None,
-                                 model=model, base_model=base_model,
-                                 steps_per_epoch=50, epochs=100, optimizer=optimizer, GCP=GCP, job_dir=job_dir)
+                                 model=model, base_model=base_model, loss=loss.weighted_categorical_crossentropy,
+                                 steps_per_epoch=50, epochs=100, optimizer=optimizer, GCP=GCP, job_dir=job_dir, verbose=2)
 
     # plt.bar(np.arange(len(training_generator.occurrences)), training_generator.occurrences)
     #
     # plt.title("Class Occurrences During Training")
     # plt.show()
-    print(history)
-    F1 = history['F1']
-    thresholds = history['threshold']
+    accuracy = history.history['acc']
+    categorical_accuracy = history.history['categorical_accuracy']
+    F1 = history.history['F1']
+    thresholds = history.history['threshold']
+
+    print("Best Accuracy:", accuracy[np.argmax(F1)])
+    print("Best Categorical Accuracy:", categorical_accuracy[np.argmax(F1)])
     print("Best F1:", F1[np.argmax(F1)])
     print("Best Thresholds:", thresholds[np.argmax(F1)])
+
 
 def predict():
     global model_name
@@ -83,6 +92,7 @@ def predict():
         raise Exception("You need to train a model before you can make predictions.")
 
     create_submission(validation_generator, model, steps=None)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -106,7 +116,7 @@ if __name__ == '__main__':
 
     model_name = "inception_v3_model"
     model_class = inception_v3_model
-    save_images = True
+    save_images = False
     input_dim = (224, 224, 3)
     n_classes = params.n_classes
     label_occ_threshold = 500
