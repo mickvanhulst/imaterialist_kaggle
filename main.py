@@ -7,6 +7,8 @@ from evaluation.callbacks import get_callbacks
 from evaluation.submision import create_submission
 import os.path
 
+import networks.loss as loss
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -52,9 +54,8 @@ def train():
     """
     optimizer = optimizers.Adam(lr=1e-3)
 
-    # weights = np.loadtxt("class_weights.csv", delimiter=',')
-    weights = np.ones((228,))
-    weights[65] = 2
+    weights = np.loadtxt("class_weights.csv", delimiter=',')
+    # weights = np.ones((228,))
 
     # history = training.train_top(generator_train=training_generator, generator_val=None,
     #                              model=model, base_model=base_model,
@@ -65,7 +66,7 @@ def train():
     #                              steps_per_epoch=50, epochs=10, optimizer=optimizer)
 
     history = training.train_full(generator_train=training_generator, generator_val=None,
-                                  model=model, weights=weights,
+                                  model=model, weights=weights, loss=loss.weighted_mean_squared_error,
                                   steps_per_epoch=50, epochs=15, optimizer=optimizer)
 
     plt.bar(np.arange(len(training_generator.occurrences)), training_generator.occurrences)
@@ -103,5 +104,5 @@ if __name__ == "__main__":
     input_dim = (224, 224, 3)
     n_classes = params.n_classes
     label_occ_threshold = 5000
-    train()
-    # predict()
+    # train()
+    predict()

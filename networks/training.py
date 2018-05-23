@@ -1,6 +1,6 @@
 from keras.optimizers import SGD
 
-from networks.loss import weighted_categorical_crossentropy, actual_correct
+from networks.loss import *
 from utils import params
 
 import numpy as np
@@ -9,7 +9,6 @@ from tensorflow.python.lib.io import file_io
 
 callbacks = None
 
-
 def set_callbacks(new_callbacks):
     global callbacks
     callbacks = new_callbacks
@@ -17,7 +16,7 @@ def set_callbacks(new_callbacks):
 
 def train_top(generator_train, generator_val, model, base_model, job_dir='gs://mlip/',
               steps_per_epoch=None, epochs=5, verbose=1,
-              optimizer='rmsprop', validation_steps=None, GCP=False, weights=None):
+              optimizer='rmsprop', validation_steps=None, GCP=False, weights=None, loss=weighted_mean_squared_error):
     """
     Trains the top layers of a specified model by freezing ALL base_model layers
     :param generator_train:
@@ -42,7 +41,7 @@ def train_top(generator_train, generator_val, model, base_model, job_dir='gs://m
         layer.trainable = False if idx_layer < len(base_model.layers) else True
 
     # compile the model (should be done *after* setting layers to non-trainable)
-    model.compile(optimizer=optimizer, loss=weighted_categorical_crossentropy(weights), metrics=params.metrics)
+    model.compile(optimizer=optimizer, loss=loss(weights), metrics=params.metrics)
     history = model.fit_generator(generator=generator_train,
                                   steps_per_epoch=steps_per_epoch,
                                   epochs=epochs,
@@ -68,7 +67,7 @@ def train_top(generator_train, generator_val, model, base_model, job_dir='gs://m
 
 def train_full(generator_train, generator_val, model,
                steps_per_epoch=None, epochs=5, verbose=1,
-               optimizer='rmsprop', validation_steps=None, weights=None):
+               optimizer='rmsprop', validation_steps=None, weights=None, loss=weighted_mean_squared_error):
     """
     Train the full model; unfreeze all layers
     :param generator_train:
@@ -91,7 +90,7 @@ def train_full(generator_train, generator_val, model,
         layer.trainable = True
 
     # compile the model (should be done *after* setting layers to non-trainable)
-    model.compile(optimizer=optimizer, loss=weighted_categorical_crossentropy(weights), metrics=params.metrics)
+    model.compile(optimizer=optimizer, loss=loss(weights), metrics=params.metrics)
 
     history = model.fit_generator(generator=generator_train,
                                   steps_per_epoch=steps_per_epoch,
@@ -106,7 +105,8 @@ def train_full(generator_train, generator_val, model,
 
 def fine_tune(generator_train, generator_val, model, idx_lower,
               steps_per_epoch=None, epochs=5, verbose=1,
-              optimizer=SGD(lr=0.0001, momentum=0.9), validation_steps=None, weights=None):
+              optimizer=SGD(lr=0.0001, momentum=0.9), validation_steps=None, weights=None,
+              loss=weighted_mean_squared_error):
     """
     Fine-tune the model; freeze idx_lower first layers and train
     :param generator_train:
@@ -135,7 +135,7 @@ def fine_tune(generator_train, generator_val, model, idx_lower,
         layer.trainable = True
 
     # Recompile the model for these modifications to take effect
-    model.compile(optimizer=optimizer, loss=weighted_categorical_crossentropy(weights), metrics=params.metrics)
+    model.compile(optimizer=optimizer, loss=loss(weights), metrics=params.metrics)
 
     history = model.fit_generator(generator=generator_train,
                                   steps_per_epoch=steps_per_epoch,
