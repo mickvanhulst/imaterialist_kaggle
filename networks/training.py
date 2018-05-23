@@ -65,7 +65,7 @@ def train_top(generator_train, generator_val, model, base_model,
     return history
 
 
-def train_full(generator_train, generator_val, model, base_model,
+def train_full(generator_train, generator_val, model,
               steps_per_epoch=None, epochs=5, verbose=1,
               optimizer='rmsprop', validation_steps=None, GCP=False, weights=None, loss=weighted_mean_squared_error, job_dir='./'):
     """

@@ -33,7 +33,7 @@ class SaveModel(Callback):
                 self.model.save('best_model.h5')
 
 
-def get_callbacks(job_dir, GCP, test_generator, val_steps=None):
+def get_callbacks(job_dir, test_generator, GCP=False, val_steps=None):
 
     callbacks = []
 
