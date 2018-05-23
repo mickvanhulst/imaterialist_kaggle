@@ -21,7 +21,7 @@ def get_callbacks(job_dir, val_generator, GCP=False, val_steps=None, verbose=1):
 
     callbacks.append(
         ReduceLROnPlateau(monitor=metric,
-                          patience=1,
+                          patience=3,
                           verbose=verbose,
                           mode='max')
     )
@@ -29,7 +29,7 @@ def get_callbacks(job_dir, val_generator, GCP=False, val_steps=None, verbose=1):
     callbacks.append(
         EarlyStopping(monitor=metric,
                       min_delta=0.0001,
-                      patience=5,
+                      patience=10,
                       mode='max',
                       verbose=verbose)
     )
