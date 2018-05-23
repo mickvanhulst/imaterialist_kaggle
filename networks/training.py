@@ -5,6 +5,7 @@ from utils import params
 
 import numpy as np
 from tensorflow.python.lib.io import file_io
+import os
 
 
 callbacks = None
@@ -56,11 +57,11 @@ def train_top(generator_train, generator_val, model, base_model,
         # Save model
         # Save the model locally
         model.save('model.h5')
-
-        # Save model.h5 on to google storage
-        with file_io.FileIO('model.h5', mode='r') as input_f:
-            with file_io.FileIO(job_dir + '/model.h5', mode='w+') as output_f:
+        file_path = 'model.h5'
+        with file_io.FileIO(file_path, mode='rb') as input_f:
+            with file_io.FileIO(os.path.join(job_dir, file_path), mode='wb+') as output_f:
                 output_f.write(input_f.read())
+                print("Saved model.h5 to GCS")
 
     return history
 

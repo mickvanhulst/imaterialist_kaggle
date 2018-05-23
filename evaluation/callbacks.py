@@ -14,7 +14,8 @@ def get_callbacks(model_name, test_generator, val_steps=None):
         metric = "categorical_accuracy"
 
     callbacks.append(
-        ModelCheckpoint('./best_model_{}.h5'.format(model_name),
+        # todo: make variable from path using GCP + job-dir
+        ModelCheckpoint('gs://mlip-test/test12332/best_model_{}.h5'.format(model_name),
                         monitor=metric,
                         verbose=1,
                         save_best_only=True,
