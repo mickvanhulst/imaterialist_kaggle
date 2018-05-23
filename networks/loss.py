@@ -16,7 +16,7 @@ def weighted_categorical_crossentropy(class_weights):
 
 
 def _weighted_categorical_crossentropy(y_true, y_pred):
-    _loss = y_true * K.log(y_pred)
+    _loss = y_true * K.log(y_pred) + (1 - y_true) * K.log(1 - y_pred)
     _loss = tf.multiply(_loss, weights)
     _loss = -K.sum(_loss, -1)
     return _loss
