@@ -26,9 +26,9 @@ class MultiLabelGenerator(ImageDataGenerator):
 
     def make_datagenerator(self, datafile, batch_size=32, dim=(224, 224), n_channels=3, n_classes=params.n_classes,
                            seed=None, shuffle=True, test=False, data_path='./data/img/',
-                           save_images=False, train=False, label_occ_threshold=5000, GCP=True):
+                           save_images=False, train=False, label_occ_threshold=5000, GCP=True, thresholdsmaller=True):
         return DataGenerator(self, datafile, batch_size, dim, n_channels, n_classes,
-                             seed, shuffle, test, train, data_path, save_images, label_occ_threshold, GCP)
+                             seed, shuffle, test, train, data_path, save_images, label_occ_threshold, GCP, thresholdsmaller)
 
 
 class DataGenerator(keras.utils.Sequence):
@@ -36,7 +36,7 @@ class DataGenerator(keras.utils.Sequence):
 
     def __init__(self, image_data_generator, datafile, batch_size=32, dim=(224, 224), n_channels=3,
                  n_classes=params.n_classes, seed=None, shuffle=True, test=False, train=False, data_path='./data/img/',
-                 save_images=False, label_occ_threshold=5000, GCP=True):
+                 save_images=True, label_occ_threshold=5000, GCP=True, thresholdsmaller=False):
         """ Initialization """
         self.n = 0
         self.test = test
@@ -49,6 +49,8 @@ class DataGenerator(keras.utils.Sequence):
         self.n_channels = n_channels
         self.n_classes = n_classes
         self.train = train
+        self.thresholdsmaller = thresholdsmaller
+
 
         # vars for saving and loading the image
         self.save_images = save_images
@@ -110,7 +112,11 @@ class DataGenerator(keras.utils.Sequence):
         for i, item in series.iteritems():
             total_list.extend(item)
         count_items = Counter(total_list)
-        labels_whitelist = [x for x in count_items if count_items[x] > label_occ_threshold]
+
+        if self.thresholdsmaller:
+            labels_whitelist = [x for x in count_items if (count_items[x] <= label_occ_threshold) & (count_items[x] > 500)]
+        else:
+            labels_whitelist = [x for x in count_items if (count_items[x] > label_occ_threshold) & (count_items[x] > 500)]
 
         return series.apply(lambda x: [i for i in x if i in labels_whitelist])
 
@@ -197,8 +203,11 @@ class DataGenerator(keras.utils.Sequence):
         labels_array = np.zeros((self.n_classes,), dtype=int)
         labels = np.array(labels)
 
+
         # Labels are 1-based, so do - 1
-        labels_array[labels - 1] = 1
+        if (len(labels) > 0):
+            labels_array[labels - 1] = 1
+
         # Bookkeeping
         self.occurrences += labels_array
 
@@ -252,5 +261,5 @@ if __name__ == "__main__":
     #
     # print("Total Samples:", n_samples)
 
-    model, _ = mobilenet_model(generator.n_classes)
-    model.fit_generator(generator, steps_per_epoch=None, epochs=1, verbose=1)
+    # model, _ = mobilenet_model(generator.n_classes)
+    # model.fit_generator(generator, steps_per_epoch=None, epochs=1, verbose=1)
