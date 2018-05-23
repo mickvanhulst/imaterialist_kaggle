@@ -17,7 +17,7 @@ import os
 from utils import params
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-http_client = urllib3.PoolManager(50)
+http_client = urllib3.PoolManager(500)
 
 
 class MultiLabelGenerator(ImageDataGenerator):
