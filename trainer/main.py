@@ -50,9 +50,9 @@ def main(GCP, job_dir):
     optimizer = optimizers.Adam()
 
     #todo: Add job_dir for saving model.
-    history = training.train_top(generator_train=training_generator, generator_val=None,
+    history = training.train_full(generator_train=training_generator, generator_val=None,
                                  model=model, base_model=base_model,
-                                 steps_per_epoch=5, epochs=1, optimizer=optimizer, GCP=GCP, job_dir=job_dir)
+                                 steps_per_epoch=50, epochs=100, optimizer=optimizer, GCP=GCP, job_dir=job_dir)
 
     # plt.bar(np.arange(len(training_generator.occurrences)), training_generator.occurrences)
     #

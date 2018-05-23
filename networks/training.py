@@ -52,7 +52,6 @@ def train_top(generator_train, generator_val, model, base_model,
                                   callbacks=callbacks,
                                   max_queue_size=5
                                   )
-    # TODO: test if this works
     if GCP:
         # Save model
         # Save the model locally
@@ -66,9 +65,9 @@ def train_top(generator_train, generator_val, model, base_model,
     return history
 
 
-def train_full(generator_train, generator_val, model,
-               steps_per_epoch=None, epochs=5, verbose=1,
-               optimizer='rmsprop', validation_steps=None, weights=None, loss=weighted_mean_squared_error):
+def train_full(generator_train, generator_val, model, base_model,
+              steps_per_epoch=None, epochs=5, verbose=1,
+              optimizer='rmsprop', validation_steps=None, GCP=False, weights=None, loss=weighted_mean_squared_error, job_dir='./'):
     """
     Train the full model; unfreeze all layers
     :param generator_train:
@@ -92,15 +91,25 @@ def train_full(generator_train, generator_val, model,
 
     # compile the model (should be done *after* setting layers to non-trainable)
     model.compile(optimizer=optimizer, loss=loss(weights), metrics=params.metrics)
-
     history = model.fit_generator(generator=generator_train,
                                   steps_per_epoch=steps_per_epoch,
                                   epochs=epochs,
                                   verbose=verbose,
                                   validation_data=generator_val,
                                   validation_steps=validation_steps,
-                                  callbacks=callbacks
+                                  callbacks=callbacks,
+                                  max_queue_size=5
                                   )
+    if GCP:
+        # Save model
+        # Save the model locally
+        model.save('model.h5')
+        file_path = 'model.h5'
+        with file_io.FileIO(file_path, mode='rb') as input_f:
+            with file_io.FileIO(os.path.join(job_dir, file_path), mode='wb+') as output_f:
+                output_f.write(input_f.read())
+                print("Saved model.h5 to GCS")
+
     return history
 
 
