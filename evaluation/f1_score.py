@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 
 class AveragedF1(Callback):
-    def __init__(self, validation_generator, threshold=0.5, steps=None):
+    def __init__(self, validation_generator, steps=None):
         """
         The F1 score averaged over all classes
         :param validation_generator:
@@ -17,7 +17,6 @@ class AveragedF1(Callback):
         """
         super().__init__()
         self.val_gen = validation_generator
-        self.threshold = threshold
         self.f1_scores = []
         self.steps = steps
 
@@ -29,7 +28,8 @@ class AveragedF1(Callback):
         else:
             y_true = np.zeros(self.val_gen.batch_size * self.steps * self.val_gen.n_classes)
             y_pred = np.zeros(self.val_gen.batch_size * self.steps * self.val_gen.n_classes)
-            for step in tqdm(range(self.steps), desc="F1-Score", disable=not self.params['verbose'], unit="batches"):
+            for step in tqdm(range(self.steps),
+                             desc="F1-Score", disable=False if self.params['verbose'] == 1 else True, unit="batches"):
                 n_x, n_y = self.val_gen[step]
                 y_true[step * self.val_gen.batch_size * self.val_gen.n_classes:
                        (step + 1) * self.val_gen.batch_size * self.val_gen.n_classes] \
@@ -38,8 +38,10 @@ class AveragedF1(Callback):
                        (step + 1) * self.val_gen.batch_size * self.val_gen.n_classes] \
                     = self.model.predict(n_x).flatten()
 
+        y_true = np.array(y_true, dtype=int)
         precision, recall, thresholds = precision_recall_curve(y_true, y_pred)
         F1 = 2 * (precision * recall) / (precision + recall)
+        F1 = [f if not np.isnan(f) else 0 for f in F1]
         best_idx = np.argmax(F1)
         F1 = F1[best_idx]
         self.f1_scores.append(F1)
@@ -52,7 +54,7 @@ class AveragedF1(Callback):
         self.plot()
 
     def plot(self):
-        a = 1
+        pass
         #todo: 'Had to disable this for GCP, can save graphs as imags
         # clear_output()
         # plt.plot(self.f1_scores)
