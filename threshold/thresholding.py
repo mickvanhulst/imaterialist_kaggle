@@ -26,7 +26,7 @@ Idee:
 '''
 
 
-def labels_to_array(self, labels, n_classes):
+def labels_to_array(labels, n_classes):
     """
     Converts a list of labels to a one-hot encoded array
     """
@@ -41,8 +41,9 @@ def labels_to_array(self, labels, n_classes):
 
 def get_labels():
     # Load data
-    f = '../data/validation.json'
-    data = json.load(f)
+    datafile = '../data/validation.json'
+    with open(datafile, 'r') as f:
+        data = json.load(f)
     df = pd.DataFrame.from_records(data["images"])
     labels_df = pd.DataFrame.from_records(data["annotations"])
     df = pd.merge(df, labels_df, on="imageId", how="outer")
@@ -66,12 +67,12 @@ def thresholding(model_name,model_class):
     y = get_labels()
     print(y)
 
-    val_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=False)
-    val_generator = val_generator.make_datagenerator(
-        datafile='./data/validation.json', data_path='./data/img/val/', save_images=False,
-        test=False, shuffle=False, batch_size=128)
-
-    model = load_model("./incept_all_model.h5")
+    # val_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=False)
+    # val_generator = val_generator.make_datagenerator(
+    #     datafile='./data/validation.json', data_path='./data/img/val/', save_images=False,
+    #     test=False, shuffle=False, batch_size=128)
+    #
+    # model = load_model("./incept_all_model.h5")
 
 
 
