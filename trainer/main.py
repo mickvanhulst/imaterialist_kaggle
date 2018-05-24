@@ -33,13 +33,13 @@ def main(GCP, job_dir):
     training_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=True)
     training_generator = training_generator.make_datagenerator(
         datafile='{}train.json'.format(data_folder), data_path='{}img/train/'.format(data_folder),
-        save_images=save_images, label_occ_threshold=label_occ_threshold, batch_size=128,
+        save_images=save_images, label_occ_threshold=label_occ_threshold, batch_size=64,
         shuffle=True, train=True, thresholdsmaller=False)
 
     validation_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=True)
     validation_generator = validation_generator.make_datagenerator(
         datafile='{}validation.json'.format(data_folder), data_path='{}img/validation/'.format(data_folder),
-        save_images=save_images, batch_size=128, shuffle=True)
+        save_images=save_images, batch_size=64, shuffle=True)
 
     print("Training batches:", len(training_generator))
     print("Validation batches:", len(validation_generator))
@@ -47,16 +47,22 @@ def main(GCP, job_dir):
     training.set_callbacks(
         get_callbacks(job_dir, validation_generator, GCP=GCP, val_steps=len(validation_generator)-1, verbose=1)
     )
-
-    # if os.path.isfile("./best_model_{}.h5".format(model_name)):
-    #     print("Loading existing model ...")
-    #     model = load_model("./best_model_{}.h5".format(model_name))
+    if not GCP:
+        # If not training on GCP, try looking for a best model locally.
+        if os.path.isfile("./best_model_{}.h5".format(model_name)):
+            print("Loading existing model ...")
+            model = load_model("./best_model_{}.h5".format(model_name))
 
     optimizer = optimizers.Adam(lr=1e-3)
 
     history = training.train_top(generator_train=training_generator, generator_val=None,
                                  model=model, base_model=base_model, loss=loss.weighted_categorical_crossentropy,
-                                 steps_per_epoch=50, epochs=100, optimizer=optimizer, GCP=GCP, job_dir=job_dir, verbose=2)
+                                 steps_per_epoch=160, epochs=50, optimizer=optimizer, GCP=GCP, job_dir=job_dir, verbose=2)
+
+    history = training.fine_tune(generator_train=training_generator, generator_val=None,
+                                 model=model, loss=loss.weighted_categorical_crossentropy,
+                                 steps_per_epoch=160, epochs=100, optimizer=optimizer, GCP=GCP, job_dir=job_dir,
+                                 verbose=2, idx_lower=249)
 
     # plt.bar(np.arange(len(training_generator.occurrences)), training_generator.occurrences)
     #

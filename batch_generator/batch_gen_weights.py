@@ -19,7 +19,6 @@ from utils import params
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 http_client = urllib3.PoolManager(500)
 
-
 class MultiLabelGenerator(ImageDataGenerator):
     def __init__(self, *args, **kwargs):
         super(MultiLabelGenerator, self).__init__(*args, **kwargs)
@@ -50,7 +49,7 @@ class DataGenerator(keras.utils.Sequence):
         self.n_classes = n_classes
         self.train = train
         self.thresholdsmaller = thresholdsmaller
-
+        self.GCP = GCP
 
         # vars for saving and loading the image
         self.save_images = save_images
@@ -176,25 +175,32 @@ class DataGenerator(keras.utils.Sequence):
         download image from url, reshapes it to dimension size e.g (128x128) and normalize it
         :returns np array of image dimension
         """
-        # load the image from ./data/img/set/{ID} if it exists
-        save_path = os.path.join(self.path, str(ID) + '.jpg')
-
-        if os.path.isfile(save_path):
-            image = Image.open(save_path)
+        if self.GCP:
+            file_path = '{}{}.jpg'.format(self.path, ID)
+            with file_io.FileIO(file_path, mode='rb') as f:
+                image = Image.open(io.BytesIO(f.read()))
             image = np.asarray(image, dtype=K.floatx())
             return image / 255
+        else:
+            # load the image from ./data/img/set/{ID} if it exists
+            save_path = os.path.join(self.path, str(ID) + '.jpg')
 
-        response = http_client.request("GET", url[0])
-        image = Image.open(io.BytesIO(response.data))
-        image = image.convert("RGB")
-        image = image.resize(self.dim, Image.ANTIALIAS)
+            if os.path.isfile(save_path):
+                image = Image.open(save_path)
+                image = np.asarray(image, dtype=K.floatx())
+                return image / 255
 
-        if self.save_images:
-            image.save(save_path, optimize=True, quality=85)
+            response = http_client.request("GET", url[0])
+            image = Image.open(io.BytesIO(response.data))
+            image = image.convert("RGB")
+            image = image.resize(self.dim, Image.ANTIALIAS)
 
-        image = np.asarray(image, dtype=K.floatx())
+            if self.save_images:
+                image.save(save_path, optimize=True, quality=85)
 
-        return image / 255
+            image = np.asarray(image, dtype=K.floatx())
+
+            return image / 255
 
     def _labels_to_array(self, labels):
         """
