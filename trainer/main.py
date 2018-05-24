@@ -33,13 +33,13 @@ def main(GCP, job_dir):
     training_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=True)
     training_generator = training_generator.make_datagenerator(
         datafile='{}train.json'.format(data_folder), data_path='{}img/train/'.format(data_folder),
-        save_images=save_images, label_occ_threshold=label_occ_threshold, batch_size=64,
+        save_images=save_images, label_occ_threshold=label_occ_threshold, batch_size=16,
         shuffle=True, train=True, thresholdsmaller=False)
 
     validation_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=True)
     validation_generator = validation_generator.make_datagenerator(
         datafile='{}validation.json'.format(data_folder), data_path='{}img/validation/'.format(data_folder),
-        save_images=save_images, batch_size=64, shuffle=True)
+        save_images=save_images, batch_size=4, shuffle=True)
 
     print("Training batches:", len(training_generator))
     print("Validation batches:", len(validation_generator))
@@ -57,12 +57,12 @@ def main(GCP, job_dir):
 
     history = training.train_top(generator_train=training_generator, generator_val=None,
                                  model=model, base_model=base_model, loss=loss.weighted_categorical_crossentropy,
-                                 steps_per_epoch=160, epochs=50, optimizer=optimizer, GCP=GCP, job_dir=job_dir, verbose=2)
+                                 steps_per_epoch=4, epochs=2, optimizer=optimizer, GCP=GCP, job_dir=job_dir, verbose=1)
 
-    history = training.fine_tune(generator_train=training_generator, generator_val=None,
-                                 model=model, loss=loss.weighted_categorical_crossentropy,
-                                 steps_per_epoch=160, epochs=100, optimizer=optimizer, GCP=GCP, job_dir=job_dir,
-                                 verbose=2, idx_lower=249)
+    # history = training.fine_tune(generator_train=training_generator, generator_val=None,
+    #                              model=model, loss=loss.weighted_categorical_crossentropy,
+    #                              steps_per_epoch=160, epochs=100, optimizer=optimizer, GCP=GCP, job_dir=job_dir,
+    #                              verbose=2, idx_lower=249)
 
     # plt.bar(np.arange(len(training_generator.occurrences)), training_generator.occurrences)
     #
@@ -120,8 +120,8 @@ if __name__ == '__main__':
     if args.GCP and not args.job_dir:
         parser.error("--job-dir should be set if --GCP")
 
-    model_name = "inception_v3_model"
-    model_class = inception_v3_model
+    model_name = "mobilenet_model"
+    model_class = mobilenet_model
     save_images = False
     input_dim = (224, 224, 3)
     n_classes = params.n_classes

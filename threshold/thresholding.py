@@ -63,7 +63,7 @@ def get_labels():
 
     return y
 
-def thresholding(model_name,model_class):
+def thresholding(model_name, model_class):
     y_true = get_labels()
 
 
@@ -107,6 +107,11 @@ def thresholding(model_name,model_class):
                 high_score = score
             # print("high score ", high_score, "threshold ", best_threshold)
         best_thresh_list.append(best_threshold)
+
+    #np.argwhere(pred > best_thresh_list).flatten()
+    for  i, val in enumerate(y_pred):
+        y_pred[y_pred[i] >= best_thresh_list] = 1
+        y_pred[y_pred[i] < best_thresh_list] = 0
 
     # print((best_thresh_list))
     # print(np.unique(best_thresh_list))
