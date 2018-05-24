@@ -1,6 +1,7 @@
 from batch_generator.batch_gen_weights import DataGenerator
 from networks import training, loss
 from networks.inceptionv3 import inception_v3_model
+from networks.xception import xception_model
 from networks.mobilenet import mobilenet_model
 from evaluation.callbacks import get_callbacks
 from evaluation.submision import create_submission
@@ -31,11 +32,11 @@ def main(GCP, job_dir):
     print("Creating Data Generators...")
     training_generator = DataGenerator(
         datafile='{}train.json'.format(data_folder), data_path='{}img/train/'.format(data_folder),
-        save_images=save_images, batch_size=128, shuffle=True)
+        save_images=save_images, batch_size=64, shuffle=True)
 
     validation_generator = DataGenerator(
         datafile='{}validation.json'.format(data_folder), data_path='{}img/validation/'.format(data_folder),
-        save_images=save_images, batch_size=128, shuffle=True)
+        save_images=save_images, batch_size=32, shuffle=True)
 
     print("Training batches:", len(training_generator))
     print("Validation batches:", len(validation_generator))
@@ -44,15 +45,20 @@ def main(GCP, job_dir):
         get_callbacks(job_dir, validation_generator, GCP=GCP, val_steps=len(validation_generator)-1, verbose=1)
     )
 
-    # if os.path.isfile("./best_model_{}.h5".format(model_name)):
-    #     print("Loading existing model ...")
-    #     model = load_model("./best_model_{}.h5".format(model_name))
+    if os.path.isfile("./best_model.h5".format(model_name)):
+        print("Loading existing model ...")
+        model = load_model("./best_model.h5".format(model_name))
 
-    optimizer = optimizers.Adam(lr=1e-3)
+    optimizer = optimizers.Nadam(lr=1e-7)
 
-    history = training.train_top(generator_train=training_generator, generator_val=None,
-                                 model=model, base_model=base_model, loss=loss.weighted_categorical_crossentropy,
-                                 steps_per_epoch=50, epochs=100, optimizer=optimizer, GCP=GCP, job_dir=job_dir, verbose=2)
+    # history = training.train_top(generator_train=training_generator, generator_val=None,
+    #                              model=model, base_model=base_model,
+    #                              steps_per_epoch=100, epochs=50, optimizer=optimizer, GCP=GCP,
+    #                              job_dir=job_dir, verbose=1)
+
+    history = training.fine_tune(generator_train=training_generator, generator_val=None,
+                                 model=model, steps_per_epoch=100, epochs=50, optimizer=optimizer,
+                                 verbose=1, idx_lower=116, loss="binary_crossentropy")
 
     # plt.bar(np.arange(len(training_generator.occurrences)), training_generator.occurrences)
     #
@@ -75,8 +81,7 @@ def predict():
     global save_images
 
     print("Setting up Test Generator")
-    validation_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=False)
-    validation_generator = validation_generator.make_datagenerator(
+    validation_generator = DataGenerator(
         datafile='./data/test.json', test=True, shuffle=False, data_path='./data/img/test/', save_images=save_images)
 
     print("Setting up Model...")
@@ -110,11 +115,10 @@ if __name__ == '__main__':
     if args.GCP and not args.job_dir:
         parser.error("--job-dir should be set if --GCP")
 
-    model_name = "inception_v3_model"
-    model_class = inception_v3_model
-    save_images = False
+    model_name = "xception_model"
+    model_class = xception_model
+    save_images = True
     input_dim = (224, 224, 3)
     n_classes = params.n_classes
-    label_occ_threshold = 500
     main(args.GCP, args.job_dir)
     #predict()

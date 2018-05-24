@@ -17,7 +17,7 @@ def set_callbacks(new_callbacks):
 
 def train_top(generator_train, generator_val, model, base_model,
               steps_per_epoch=None, epochs=5, verbose=1,
-              optimizer='rmsprop', validation_steps=None, GCP=False, weights=None, loss=weighted_mean_squared_error, job_dir='./'):
+              optimizer='rmsprop', validation_steps=None, GCP=False, loss="binary_crossentropy", job_dir='./'):
     """
     Trains the top layers of a specified model by freezing ALL base_model layers
     :param generator_train:
@@ -34,15 +34,12 @@ def train_top(generator_train, generator_val, model, base_model,
     if steps_per_epoch is None:
         steps_per_epoch = len(generator_train)
 
-    if weights is None:
-        weights = np.ones((228,), dtype=int)
-
     # Freeze all base layers
     for idx_layer, layer in enumerate(model.layers):
         layer.trainable = False if idx_layer < len(base_model.layers) else True
 
     # compile the model (should be done *after* setting layers to non-trainable)
-    model.compile(optimizer=optimizer, loss=loss(weights), metrics=params.metrics)
+    model.compile(optimizer=optimizer, loss=loss, metrics=params.metrics)
     history = model.fit_generator(generator=generator_train,
                                   steps_per_epoch=steps_per_epoch,
                                   epochs=epochs,
@@ -115,8 +112,8 @@ def train_full(generator_train, generator_val, model,
 
 def fine_tune(generator_train, generator_val, model, idx_lower,
               steps_per_epoch=None, epochs=5, verbose=1,
-              optimizer=SGD(lr=0.0001, momentum=0.9), validation_steps=None, weights=None,
-              loss=weighted_mean_squared_error):
+              optimizer=SGD(lr=0.0001, momentum=0.9), validation_steps=None,
+              loss="binary_crossentropy"):
     """
     Fine-tune the model; freeze idx_lower first layers and train
     :param generator_train:
@@ -136,16 +133,13 @@ def fine_tune(generator_train, generator_val, model, idx_lower,
     if steps_per_epoch is None:
         steps_per_epoch = len(generator_train)
 
-    if weights is None:
-        weights = np.ones((228,), dtype=int)
-
     for layer in model.layers[:idx_lower]:
         layer.trainable = False
     for layer in model.layers[idx_lower:]:
         layer.trainable = True
 
     # Recompile the model for these modifications to take effect
-    model.compile(optimizer=optimizer, loss=loss(weights), metrics=params.metrics)
+    model.compile(optimizer=optimizer, loss=loss, metrics=params.metrics)
 
     history = model.fit_generator(generator=generator_train,
                                   steps_per_epoch=steps_per_epoch,

@@ -41,4 +41,9 @@ def xception_model(n_outputs, n_features=1024, optimizer='rmsprop', input_shape=
 
 
 if __name__ == "__main__":
-    xception_model(params.n_classes, input_shape=params.input_shape)
+    model, base_model = xception_model(params.n_classes, input_shape=params.input_shape)
+
+    for i, layer in enumerate(model.layers):
+        if layer.name == "block13_sepconv1_act":
+            print("Layer {} is the beginning of the last 2 blocks".format(i))
+            break

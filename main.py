@@ -39,7 +39,7 @@ def train():
     print("Validation batches:", len(validation_generator))
 
     # About half of the validation set will be used per epoch
-    training.set_callbacks(get_callbacks(model_name, validation_generator, val_steps=10))
+    training.set_callbacks(get_callbacks(model_name, validation_generator, val_steps=5))
     
     if os.path.isfile("./best_model_{}.h5".format(model_name)):
         print("Loading existing model ...")
@@ -106,7 +106,7 @@ def predict():
 if __name__ == "__main__":
     model_name = "mobilenet"
     model_class = mobilenet_model
-    save_images = False
+    save_images = True
     input_dim = (224, 224, 3)
     n_classes = params.n_classes
     label_occ_threshold = 5000

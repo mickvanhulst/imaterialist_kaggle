@@ -32,6 +32,6 @@ class SaveModel(Callback):
                         output_f.write(input_f.read())
                         print("Saved model.h5 to GCS")
             else:
-                self.model.save('best_model.h5')
+                self.model.save('best_model_2.h5')
         elif self.verbose:
             print("F1 did not increase...")
