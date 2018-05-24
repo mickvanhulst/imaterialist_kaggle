@@ -49,6 +49,7 @@ class AveragedF1(Callback):
         logs['threshold'] = thresholds[best_idx]
         logs['F1'] = F1
         print('F1-score: {}\nThreshold: {}'.format(logs['F1'], logs['threshold']))
+        self.val_gen.on_epoch_end()
 
     def on_train_end(self, logs={}):
         self.plot()
