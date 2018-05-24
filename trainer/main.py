@@ -1,4 +1,4 @@
-from batch_generator.batch_gen_weights import MultiLabelGenerator
+from batch_generator.batch_gen_weights import DataGenerator
 from networks import training, loss
 from networks.inceptionv3 import inception_v3_model
 from networks.mobilenet import mobilenet_model
@@ -6,7 +6,6 @@ from evaluation.callbacks import get_callbacks
 from evaluation.submision import create_submission
 import os.path
 
-#import matplotlib.pyplot as plt
 import numpy as np
 
 from utils import params
@@ -27,17 +26,14 @@ def main(GCP, job_dir):
     if GCP:
         data_folder = 'gs://mlip/'
     else:
-        data_folder = './data/'
+        data_folder = '../data/'
 
     print("Creating Data Generators...")
-    training_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=True)
-    training_generator = training_generator.make_datagenerator(
+    training_generator = DataGenerator(
         datafile='{}train.json'.format(data_folder), data_path='{}img/train/'.format(data_folder),
-        save_images=save_images, label_occ_threshold=label_occ_threshold, batch_size=128,
-        shuffle=True, train=True, thresholdsmaller=False)
+        save_images=save_images, batch_size=128, shuffle=True)
 
-    validation_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=True)
-    validation_generator = validation_generator.make_datagenerator(
+    validation_generator = DataGenerator(
         datafile='{}validation.json'.format(data_folder), data_path='{}img/validation/'.format(data_folder),
         save_images=save_images, batch_size=128, shuffle=True)
 
