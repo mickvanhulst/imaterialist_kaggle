@@ -100,15 +100,6 @@ def train_full(generator_train, generator_val, model,
                                   callbacks=callbacks,
                                   max_queue_size=5
                                   )
-    if GCP:
-        # Save model
-        # Save the model locally
-        model.save('model.h5')
-        file_path = 'model.h5'
-        with file_io.FileIO(file_path, mode='rb') as input_f:
-            with file_io.FileIO(os.path.join(job_dir, file_path), mode='wb+') as output_f:
-                output_f.write(input_f.read())
-                print("Saved model.h5 to GCS")
 
     return history
 
@@ -155,4 +146,5 @@ def fine_tune(generator_train, generator_val, model, idx_lower,
                                   validation_steps=validation_steps,
                                   callbacks=callbacks
                                   )
+
     return history

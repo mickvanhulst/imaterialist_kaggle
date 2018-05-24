@@ -175,7 +175,6 @@ class DataGenerator(keras.utils.Sequence):
         download image from url, reshapes it to dimension size e.g (128x128) and normalize it
         :returns np array of image dimension
         """
-        ID = 2
         if self.GCP:
             file_path = '{}{}.jpg'.format(self.path, ID)
             with file_io.FileIO(file_path, mode='rb') as f:
