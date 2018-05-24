@@ -74,35 +74,47 @@ def thresholding(model_name,model_class):
 
     model = load_model("../incept_all_model.h5")
 
-    y_pred = model.predict_generator(val_generator,
-                                     steps=None,
-                                     verbose=1)
+    # y_pred = model.predict_generator(val_generator,
+    #                                  steps=None,
+    #                                  verbose=1)
 
-    np.save("y_pred", y_pred)
+    # np.save("y_pred", y_pred)
 
-    thresholds = np.linspace(0.0, 1.0, num=15)
+    y_pred = np.load('./y_pred.npy')
 
+    thresholds = np.linspace(0.0, 1.0, num=50)
+    best_thresh_list = []
     for n_class in range(228):
-        y_true_temp = y[n_class]
-        y_pred_temp = y[n_class]
+        y_true_temp = y_true[:, n_class]
+        y_pred_temp = y_pred[:, n_class]
+
         high_score = 0
         for threshold in thresholds:
-            y_pred_thresh = y_pred_temp
+            y_pred_thresh = y_pred_temp.copy()
 
             y_pred_thresh[y_pred_thresh >= threshold] = 1
             y_pred_thresh[y_pred_thresh < threshold] = 0
 
             # Compare prediction with true labels.
-            score = f1_score(y_true_temp,y_pred_thresh)
+            score = (y_true_temp == y_pred_thresh).sum()
+
+            # TODO: Want to use F1score above, but gives error about 0 divide error
+
+            # print("f1 score", score)
+
             if score > high_score:
                 best_threshold = threshold
                 high_score = score
-            print("high score ", high_score, "threshold ", best_threshold)
-        thresholds.append(best_threshold)
+            # print("high score ", high_score, "threshold ", best_threshold)
+        best_thresh_list.append(best_threshold)
+
+    # print((best_thresh_list))
+    # print(np.unique(best_thresh_list))
+    print(best_thresh_list)
 
 
 
-    np.save("thresholds_incept_all_model",thresholds)
+    np.savetxt("thresholds_incept_all_model",best_thresh_list)
 
 
 
