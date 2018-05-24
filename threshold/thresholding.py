@@ -75,16 +75,16 @@ def thresholding(model_name,model_class):
 
 
 
-    batch_y = val_generator.
+    #batch_y = val_generator.
 
-    print(len(batch_y))
+    #print(len(batch_y))
 
     # y_pred = model.predict_generator(val_generator,
     #                                 steps=None,
     #                                 verbose=1)
 
-    print(len(batch_y))
-    print(len(y_pred))
+    #print(len(batch_y))
+    #print(len(y_pred))
 
 
 
