@@ -7,7 +7,7 @@ from evaluation.submision import create_submission
 import os.path
 import networks.loss as loss
 import json
-
+from sklearn.metrics import f1_score
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -64,32 +64,46 @@ def get_labels():
     return y
 
 def thresholding(model_name,model_class):
-    y = get_labels()
-    print(y)
-
-    # val_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=False)
-    # val_generator = val_generator.make_datagenerator(
-    #     datafile='./data/validation.json', data_path='./data/img/val/', save_images=False,
-    #     test=False, shuffle=False, batch_size=128)
-    #
-    # model = load_model("./incept_all_model.h5")
+    y_true = get_labels()
 
 
+    val_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=False)
+    val_generator = val_generator.make_datagenerator(
+        datafile='../data/validation.json', data_path='../data/img/val/', save_images=False,
+        test=False, shuffle=False, batch_size=128)
 
-    #batch_y = val_generator.
+    model = load_model("../incept_all_model.h5")
 
-    #print(len(batch_y))
+    y_pred = model.predict_generator(val_generator,
+                                     steps=None,
+                                     verbose=1)
 
-    # y_pred = model.predict_generator(val_generator,
-    #                                 steps=None,
-    #                                 verbose=1)
+    np.save("y_pred", y_pred)
 
-    #print(len(batch_y))
-    #print(len(y_pred))
+    thresholds = np.linspace(0.0, 1.0, num=15)
+
+    for n_class in range(228):
+        y_true_temp = y[n_class]
+        y_pred_temp = y[n_class]
+        high_score = 0
+        for threshold in thresholds:
+            y_pred_thresh = y_pred_temp
+
+            y_pred_thresh[y_pred_thresh >= threshold] = 1
+            y_pred_thresh[y_pred_thresh < threshold] = 0
+
+            # Compare prediction with true labels.
+            score = f1_score(y_true_temp,y_pred_thresh)
+            if score > high_score:
+                best_threshold = threshold
+                high_score = score
+            print("high score ", high_score, "threshold ", best_threshold)
+        thresholds.append(best_threshold)
 
 
 
-    return None
+    np.save("thresholds_incept_all_model",thresholds)
+
 
 
 
