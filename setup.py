@@ -1,7 +1,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-REQUIRED_PACKAGES = ['sklearn', 'numpy', 'pandas', 'keras', 'tensorflow', 'h5py', 'urllib3', 'pillow', 'tqdm']
+REQUIRED_PACKAGES = ['sklearn', 'numpy', 'pandas', 'keras', 'tensorflow-gpu', 'h5py', 'urllib3', 'pillow', 'tqdm']
 
 setup(
     name='trainer',

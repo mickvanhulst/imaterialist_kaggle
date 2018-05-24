@@ -36,7 +36,7 @@ def train():
         batch_size=32, shuffle=True)
 
     print("Training batches:", len(training_generator))
-    # print("Validation batches:", len(validation_generator))
+    print("Validation batches:", len(validation_generator))
 
     # About half of the validation set will be used per epoch
     training.set_callbacks(get_callbacks(model_name, validation_generator, val_steps=10))
