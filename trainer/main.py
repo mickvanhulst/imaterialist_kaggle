@@ -51,7 +51,7 @@ def main(GCP, job_dir):
         get_callbacks(job_dir, None, GCP=GCP, val_steps=None, verbose=1)
     )
     if not GCP:
-        # If not training on GCP, try looking for a best model locally.
+        # If not training on GCP, try looking for an existing model.
         if os.path.isfile("./best_model_{}.h5".format(model_name)):
             print("Loading existing model ...")
             model = load_model("./best_model_{}.h5".format(model_name))
