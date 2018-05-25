@@ -57,7 +57,7 @@ def main(GCP, job_dir):
     #                              job_dir=job_dir, verbose=1)
 
     history = training.fine_tune(generator_train=training_generator, generator_val=None,
-                                 model=model, steps_per_epoch=100, epochs=50, optimizer=optimizer,
+                                 model=model, steps_per_epoch=1, epochs=50, optimizer=optimizer,
                                  verbose=1, idx_lower=116, loss="binary_crossentropy")
 
     # plt.bar(np.arange(len(training_generator.occurrences)), training_generator.occurrences)
