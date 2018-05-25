@@ -9,5 +9,5 @@ setup(
     install_requires=REQUIRED_PACKAGES,
     packages=find_packages(),
     include_package_data=True,
-    description='My trainer application package.'
+    description='iMaterialist Master Trainer'
 )
