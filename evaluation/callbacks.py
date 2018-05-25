@@ -12,25 +12,27 @@ def get_callbacks(job_dir, val_generator, GCP=False, val_steps=None, verbose=1):
             AveragedF1(val_generator, steps=val_steps)
         )
         metric = "F1"
+        mode = "max"
     else:
-        metric = "categorical_accuracy"
+        metric = "val_loss"
+        mode = "min"
 
     callbacks.append(
-        SaveModel(job_dir, GCP)
+        SaveModel(job_dir, GCP, metric, mode)
     )
 
     callbacks.append(
         ReduceLROnPlateau(monitor=metric,
                           patience=3,
                           verbose=verbose,
-                          mode='max')
+                          mode=mode)
     )
 
     callbacks.append(
         EarlyStopping(monitor=metric,
                       min_delta=0.0001,
                       patience=10,
-                      mode='max',
+                      mode=mode,
                       verbose=verbose)
     )
 
