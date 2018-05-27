@@ -116,13 +116,7 @@ def thresholding(model_name, model_class):
     # print((best_thresh_list))
     # print(np.unique(best_thresh_list))
     print(best_thresh_list)
-
-
-
     np.savetxt("thresholds_incept_all_model",best_thresh_list)
-
-
-
 
 if __name__ == "__main__":
     model_name = "incept_all_model.h5"

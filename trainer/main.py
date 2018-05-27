@@ -64,7 +64,7 @@ def main(GCP, job_dir):
 
     history = training.train_top(generator_train=training_generator, generator_val=validation_generator,
                                  model=model, base_model=base_model, loss="binary_crossentropy",
-                                 steps_per_epoch=160, epochs=50, optimizer=optimizer, verbose=2)
+                                 steps_per_epoch=None, epochs=2, optimizer=optimizer, verbose=2)
 
     # accuracy = history.history['acc']
     # # categorical_accuracy = history.history['categorical_accuracy']
@@ -90,7 +90,7 @@ def main(GCP, job_dir):
 
     history = training.fine_tune(generator_train=training_generator, generator_val=validation_generator,
                                  model=model, idx_lower=249, loss="binary_crossentropy",
-                                 steps_per_epoch=160, epochs=100, optimizer=optimizer, verbose=2)
+                                 steps_per_epoch=None, epochs=5, optimizer=optimizer, verbose=2)
 
     # accuracy = history.history['acc']
     # categorical_accuracy = history.history['categorical_accuracy']
