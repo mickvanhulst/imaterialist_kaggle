@@ -10,6 +10,7 @@ import os
 
 callbacks = None
 
+
 def set_callbacks(new_callbacks):
     global callbacks
     callbacks = new_callbacks
@@ -17,7 +18,7 @@ def set_callbacks(new_callbacks):
 
 def train_top(generator_train, generator_val, model, base_model,
               steps_per_epoch=None, epochs=5, verbose=1,
-              optimizer='rmsprop', validation_steps=None, GCP=False, weights=None, loss=weighted_mean_squared_error, job_dir='./'):
+              optimizer='rmsprop', validation_steps=None, weights=None, loss=weighted_mean_squared_error):
     """
     Trains the top layers of a specified model by freezing ALL base_model layers
     :param generator_train:
@@ -34,15 +35,16 @@ def train_top(generator_train, generator_val, model, base_model,
     if steps_per_epoch is None:
         steps_per_epoch = len(generator_train)
 
-    if weights is None:
-        weights = np.ones((228,), dtype=int)
+    if callable(loss):
+        loss_weights = weights if weights is not None else np.ones((228,), dtype=int)
+        loss = loss(loss_weights)
 
     # Freeze all base layers
     for idx_layer, layer in enumerate(model.layers):
         layer.trainable = False if idx_layer < len(base_model.layers) else True
 
     # compile the model (should be done *after* setting layers to non-trainable)
-    model.compile(optimizer=optimizer, loss=loss(weights), metrics=params.metrics)
+    model.compile(optimizer=optimizer, loss=loss, metrics=params.metrics)
     history = model.fit_generator(generator=generator_train,
                                   steps_per_epoch=steps_per_epoch,
                                   epochs=epochs,
@@ -52,22 +54,12 @@ def train_top(generator_train, generator_val, model, base_model,
                                   callbacks=callbacks,
                                   max_queue_size=5
                                   )
-    if GCP:
-        # Save model
-        # Save the model locally
-        model.save('model.h5')
-        file_path = 'model.h5'
-        with file_io.FileIO(file_path, mode='rb') as input_f:
-            with file_io.FileIO(os.path.join(job_dir, file_path), mode='wb+') as output_f:
-                output_f.write(input_f.read())
-                print("Saved model.h5 to GCS")
-
     return history
 
 
 def train_full(generator_train, generator_val, model,
               steps_per_epoch=None, epochs=5, verbose=1,
-              optimizer='rmsprop', validation_steps=None, GCP=False, weights=None, loss=weighted_mean_squared_error, job_dir='./'):
+              optimizer='rmsprop', validation_steps=None, weights=None, loss=weighted_mean_squared_error):
     """
     Train the full model; unfreeze all layers
     :param generator_train:
@@ -83,14 +75,15 @@ def train_full(generator_train, generator_val, model,
     if steps_per_epoch is None:
         steps_per_epoch = len(generator_train)
 
-    if weights is None:
-        weights = np.ones((228,), dtype=int)
+    if callable(loss):
+        loss_weights = weights if weights is not None else np.ones((228,), dtype=int)
+        loss = loss(loss_weights)
 
     for layer in model.layers:
         layer.trainable = True
 
     # compile the model (should be done *after* setting layers to non-trainable)
-    model.compile(optimizer=optimizer, loss=loss(weights), metrics=params.metrics)
+    model.compile(optimizer=optimizer, loss=loss, metrics=params.metrics)
     history = model.fit_generator(generator=generator_train,
                                   steps_per_epoch=steps_per_epoch,
                                   epochs=epochs,
@@ -100,15 +93,6 @@ def train_full(generator_train, generator_val, model,
                                   callbacks=callbacks,
                                   max_queue_size=5
                                   )
-    if GCP:
-        # Save model
-        # Save the model locally
-        model.save('model.h5')
-        file_path = 'model.h5'
-        with file_io.FileIO(file_path, mode='rb') as input_f:
-            with file_io.FileIO(os.path.join(job_dir, file_path), mode='wb+') as output_f:
-                output_f.write(input_f.read())
-                print("Saved model.h5 to GCS")
 
     return history
 
@@ -136,8 +120,9 @@ def fine_tune(generator_train, generator_val, model, idx_lower,
     if steps_per_epoch is None:
         steps_per_epoch = len(generator_train)
 
-    if weights is None:
-        weights = np.ones((228,), dtype=int)
+    if callable(loss):
+        loss_weights = weights if weights is not None else np.ones((228,), dtype=int)
+        loss = loss(loss_weights)
 
     for layer in model.layers[:idx_lower]:
         layer.trainable = False
@@ -145,7 +130,7 @@ def fine_tune(generator_train, generator_val, model, idx_lower,
         layer.trainable = True
 
     # Recompile the model for these modifications to take effect
-    model.compile(optimizer=optimizer, loss=loss(weights), metrics=params.metrics)
+    model.compile(optimizer=optimizer, loss=loss, metrics=params.metrics)
 
     history = model.fit_generator(generator=generator_train,
                                   steps_per_epoch=steps_per_epoch,
@@ -155,4 +140,5 @@ def fine_tune(generator_train, generator_val, model, idx_lower,
                                   validation_steps=validation_steps,
                                   callbacks=callbacks
                                   )
+
     return history

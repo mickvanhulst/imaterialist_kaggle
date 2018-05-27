@@ -6,7 +6,6 @@ from evaluation.callbacks import get_callbacks
 from evaluation.submision import create_submission
 import os.path
 
-#import matplotlib.pyplot as plt
 import numpy as np
 
 from utils import params
@@ -18,6 +17,10 @@ from keras import optimizers
 
 
 def main(GCP, job_dir):
+
+    if not GCP:
+        import matplotlib.pyplot as plt
+
     print("Setting up Model...")
     global model_name
     global model_class
@@ -45,38 +48,65 @@ def main(GCP, job_dir):
     print("Validation batches:", len(validation_generator))
 
     training.set_callbacks(
-        get_callbacks(job_dir, validation_generator, GCP=GCP, val_steps=len(validation_generator)-1, verbose=1)
+        get_callbacks(job_dir, None, GCP=GCP, val_steps=None, verbose=1)
     )
     if not GCP:
-        # If not training on GCP, try looking for a best model locally.
+        # If not training on GCP, try looking for an existing model.
         if os.path.isfile("./best_model_{}.h5".format(model_name)):
             print("Loading existing model ...")
             model = load_model("./best_model_{}.h5".format(model_name))
 
-    optimizer = optimizers.Adam(lr=1e-3)
+    #######################################
+    #          Top Training               #
+    #######################################
+    print("Starting Top Training...")
+    optimizer = optimizers.Nadam(lr=1e-3)
 
-    history = training.train_top(generator_train=training_generator, generator_val=None,
-                                 model=model, base_model=base_model, loss=loss.weighted_categorical_crossentropy,
-                                 steps_per_epoch=160, epochs=50, optimizer=optimizer, GCP=GCP, job_dir=job_dir, verbose=2)
+    history = training.train_top(generator_train=training_generator, generator_val=validation_generator,
+                                 model=model, base_model=base_model, loss="binary_crossentropy",
+                                 steps_per_epoch=160, epochs=50, optimizer=optimizer, verbose=2)
 
-    history = training.fine_tune(generator_train=training_generator, generator_val=None,
-                                 model=model, loss=loss.weighted_categorical_crossentropy,
-                                 steps_per_epoch=160, epochs=100, optimizer=optimizer, GCP=GCP, job_dir=job_dir,
-                                 verbose=2, idx_lower=249)
-
-    # plt.bar(np.arange(len(training_generator.occurrences)), training_generator.occurrences)
+    # accuracy = history.history['acc']
+    # # categorical_accuracy = history.history['categorical_accuracy']
+    # F1 = history.history['F1']
+    # thresholds = history.history['threshold']
     #
-    # plt.title("Class Occurrences During Training")
-    # plt.show()
-    accuracy = history.history['acc']
-    categorical_accuracy = history.history['categorical_accuracy']
-    F1 = history.history['F1']
-    thresholds = history.history['threshold']
+    # print("Best Accuracy:", accuracy[np.argmax(F1)])
+    # # print("Best Categorical Accuracy:", categorical_accuracy[np.argmax(F1)])
+    # print("Best F1:", F1[np.argmax(F1)])
+    # print("Best Thresholds:", thresholds[np.argmax(F1)])
 
-    print("Best Accuracy:", accuracy[np.argmax(F1)])
-    print("Best Categorical Accuracy:", categorical_accuracy[np.argmax(F1)])
-    print("Best F1:", F1[np.argmax(F1)])
-    print("Best Thresholds:", thresholds[np.argmax(F1)])
+    if not GCP:
+        plt.bar(np.arange(len(training_generator.occurrences)), training_generator.occurrences)
+
+        plt.title("Class Occurrences During Training")
+        plt.show()
+
+    #######################################
+    #          Fine Tuning                #
+    #######################################
+    print("Starting Fine Tuning...")
+    optimizer = optimizers.Nadam(lr=1e-7)
+
+    history = training.fine_tune(generator_train=training_generator, generator_val=validation_generator,
+                                 model=model, idx_lower=249, loss="binary_crossentropy",
+                                 steps_per_epoch=160, epochs=100, optimizer=optimizer, verbose=2)
+
+    # accuracy = history.history['acc']
+    # categorical_accuracy = history.history['categorical_accuracy']
+    # F1 = history.history['F1']
+    # thresholds = history.history['threshold']
+
+    # print("Best Accuracy:", accuracy[np.argmax(F1)])
+    # print("Best Categorical Accuracy:", categorical_accuracy[np.argmax(F1)])
+    # print("Best F1:", F1[np.argmax(F1)])
+    # print("Best Thresholds:", thresholds[np.argmax(F1)])
+
+    if not GCP:
+        plt.bar(np.arange(len(training_generator.occurrences)), training_generator.occurrences)
+
+        plt.title("Class Occurrences During Training")
+        plt.show()
 
 
 def predict():

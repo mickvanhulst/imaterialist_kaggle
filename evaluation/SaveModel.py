@@ -1,10 +1,11 @@
 from tensorflow.python.lib.io import file_io
 import os
 from keras.callbacks import Callback
+import operator
 
 
 class SaveModel(Callback):
-    def __init__(self, job_dir, GCP, vebose=1):
+    def __init__(self, job_dir, GCP, metric, mode, vebose=1):
         """
         The F1 score averaged over all classes
         :param validation_generator:
@@ -12,26 +13,29 @@ class SaveModel(Callback):
         :param steps: number of validation batches, default to whole validation dataset
         """
         super().__init__()
-        self.best_F1 = 0
+        self.best_score = float('inf') if mode is "min" else -float('inf')
         self.job_dir = job_dir
         self.GCP = GCP
         self.verbose = vebose
+        self.metric = metric
+        self.comparison = operator.lt if mode is "min" else operator.gt
 
     def on_epoch_end(self, epoch, logs={}):
-        if logs['F1'] > self.best_F1:
+        if self.comparison(logs[self.metric], self.best_score):
             if self.verbose:
-                print("F1 decreased from {} to {}, saving the model...".format(self.best_F1, logs['F1']))
-            self.best_F1 = logs['F1']
+                print("{} decreased from {} to {}, saving the model...".format(
+                    self.metric, self.best_score, logs[self.metric]))
+            self.best_score = logs[self.metric]
+
+            # Save model
+            # Save the model locally
+            file_path = 'model_epoch{:02d}.h5'.format(epoch)
+            self.model.save(file_path)
             if self.GCP:
-                # Save model
-                # Save the model locally
-                self.model.save('model.h5')
-                file_path = 'model.h5'
+                # Save the model to GCS
                 with file_io.FileIO(file_path, mode='rb') as input_f:
                     with file_io.FileIO(os.path.join(self.job_dir, file_path), mode='wb+') as output_f:
                         output_f.write(input_f.read())
-                        print("Saved model.h5 to GCS")
-            else:
-                self.model.save('best_model.h5')
+                        print("Saved {} to GCS".format(file_path))
         elif self.verbose:
-            print("F1 did not increase...")
+            print("{} did not increase...".format(self.metric))

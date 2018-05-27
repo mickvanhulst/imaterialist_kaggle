@@ -10,7 +10,7 @@ pred_activation = "sigmoid"
 #################################
 
 loss = "binary_crossentropy"
-metrics = ["accuracy", 'categorical_accuracy']
+metrics = ["accuracy"]  # , 'categorical_accuracy']
 
 
 #################################

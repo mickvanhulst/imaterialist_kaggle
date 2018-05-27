@@ -38,17 +38,47 @@ class AveragedF1(Callback):
                        (step + 1) * self.val_gen.batch_size * self.val_gen.n_classes] \
                     = self.model.predict(n_x).flatten()
 
+        # Rewrite y_pred/y_true cause @Dennis was too tired :P.
+        y_pred = np.reshape(y_pred, [self.val_gen.batch_size * self.steps, 228])
+        y_true = np.reshape(y_true, [self.val_gen.batch_size * self.steps, 228])
+
+        # Calculate threshold per class
+        thresholds = np.linspace(0.0, 1.0, num=50)
+        best_thresh_list = []
+        print('started calculating F1')
+
+        for n_class in range(228):
+            y_true_temp = y_true[:, n_class]
+            y_pred_temp = y_pred[:, n_class]
+
+            high_score = 0
+            for threshold in thresholds:
+                y_pred_thresh = y_pred_temp.copy()
+
+                y_pred_thresh[y_pred_thresh >= threshold] = 1
+                y_pred_thresh[y_pred_thresh < threshold] = 0
+
+                # Compare prediction with true labels.
+                score = (y_true_temp == y_pred_thresh).sum()
+
+                if score > high_score:
+                    best_threshold = threshold
+                    high_score = score
+                # print("high score ", high_score, "threshold ", best_threshold)
+            best_thresh_list.append(best_threshold)
+
+        # Now apply thresholds to y_predict
+        for i, val in enumerate(y_pred):
+            y_pred[i][y_pred[i] >= best_thresh_list] = 1
+            y_pred[i][y_pred[i] < best_thresh_list] = 0
+
         y_true = np.array(y_true, dtype=int)
-        precision, recall, thresholds = precision_recall_curve(y_true, y_pred)
-        F1 = 2 * (precision * recall) / (precision + recall)
-        F1 = [f if not np.isnan(f) else 0 for f in F1]
-        best_idx = np.argmax(F1)
-        F1 = F1[best_idx]
+        y_pred = np.array(y_pred, dtype=int)
+        F1 = f1_score(y_true.flatten(), y_pred.flatten())
         self.f1_scores.append(F1)
 
-        logs['threshold'] = thresholds[best_idx]
         logs['F1'] = F1
-        print('F1-score: {}\nThreshold: {}'.format(logs['F1'], logs['threshold']))
+        print('F1-score: {}'.format(logs['F1']))
 
     def on_train_end(self, logs={}):
         self.plot()
