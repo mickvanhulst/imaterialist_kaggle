@@ -1,21 +1,14 @@
-from batch_generator.batch_gen_weights import MultiLabelGenerator
-from networks.mobilenet import mobilenet_model
-from networks.inceptionv3 import inception_v3_model
-from networks import training
-from evaluation.callbacks import get_callbacks
-from evaluation.submision import create_submission
-import os.path
-import networks.loss as loss
 import json
-from sklearn.metrics import f1_score
-import matplotlib.pyplot as plt
+
 import numpy as np
-
-from utils import params
-from utils.load_model import load_model
-
-from keras import optimizers
 import pandas as pd
+from sklearn.metrics import f1_score
+from tqdm import tqdm
+
+from batch_generator.batch_gen_weights import MultiLabelGenerator
+from networks.inceptionv3 import inception_v3_model
+from networks.xception import xception_model
+from utils.load_model import load_model
 
 '''
 Idee:
@@ -39,6 +32,7 @@ def labels_to_array(labels, n_classes):
 
     return labels_array
 
+
 def get_labels():
     # Load data
     datafile = '../data/validation.json'
@@ -59,36 +53,37 @@ def get_labels():
         labels = np.asarray(item)
 
         # Store label and class
-        y[i,] = labels_to_array(labels, n_classes)
+        y[i, ] = labels_to_array(labels, n_classes)
 
     return y
 
-def thresholding(model_name, model_class):
-    y_true = get_labels()
 
+def thresholding(model_name, model_class, datafile='../data/validation.json', data_path='../data/img/validation/'):
+    y_true = get_labels()
 
     val_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=False)
     val_generator = val_generator.make_datagenerator(
-        datafile='../data/validation.json', data_path='../data/img/val/', save_images=False,
-        test=False, shuffle=False, batch_size=128)
+        datafile=datafile, data_path=data_path, save_images=True,
+        test=False, shuffle=False, batch_size=64)
 
-    model = load_model("../incept_all_model.h5")
+    model = load_model(model_name)
 
     # y_pred = model.predict_generator(val_generator,
     #                                  steps=None,
     #                                  verbose=1)
-
+    #
     # np.save("y_pred", y_pred)
 
     y_pred = np.load('./y_pred.npy')
 
     thresholds = np.linspace(0.0, 1.0, num=50)
     best_thresh_list = []
-    for n_class in range(228):
+    for n_class in tqdm(range(228), desc="Calculating Thresholds", unit="classes"):
         y_true_temp = y_true[:, n_class]
         y_pred_temp = y_pred[:, n_class]
 
         high_score = 0
+        best_threshold = 0.5
         for threshold in thresholds:
             y_pred_thresh = y_pred_temp.copy()
 
@@ -96,9 +91,8 @@ def thresholding(model_name, model_class):
             y_pred_thresh[y_pred_thresh < threshold] = 0
 
             # Compare prediction with true labels.
-            score = (y_true_temp == y_pred_thresh).sum()
-
-            # TODO: Want to use F1score above, but gives error about 0 divide error
+            score = f1_score(y_true_temp, y_pred_thresh, average="micro")
+            score = 0 if np.isnan(score) else score
 
             # print("f1 score", score)
 
@@ -108,17 +102,17 @@ def thresholding(model_name, model_class):
             # print("high score ", high_score, "threshold ", best_threshold)
         best_thresh_list.append(best_threshold)
 
-    #np.argwhere(pred > best_thresh_list).flatten()
-    for  i, val in enumerate(y_pred):
-        y_pred[y_pred[i] >= best_thresh_list] = 1
-        y_pred[y_pred[i] < best_thresh_list] = 0
+    for i, val in enumerate(y_pred):
+        val[val >= best_thresh_list] = 1
+        val[val < best_thresh_list] = 0
 
-    # print((best_thresh_list))
-    # print(np.unique(best_thresh_list))
     print(best_thresh_list)
-    np.savetxt("thresholds_incept_all_model",best_thresh_list)
+    np.savetxt("thresholds_{}.npy".format(model_name), best_thresh_list)
+
+    return best_thresh_list, y_pred
+
 
 if __name__ == "__main__":
-    model_name = "incept_all_model.h5"
-    model_class = inception_v3_model
-    thresholding(model_name,model_class)
+    model_name = "../trainer/model_epoch09.h5"
+    model_class = xception_model
+    thresholding(model_name, model_class)
