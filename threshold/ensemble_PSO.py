@@ -39,7 +39,7 @@ def particle_optimization(particle, global_opt, local_opt, w, c_1, c_2, v_i):
 def PSO(predictions, y_true):
     w = .7298
     c_1 = c_2 = 1.49618
-    max_iter = 100
+    max_iter = 1000
     n_particles = 10
 
     # Particles equals weights, init local and global opt.
@@ -76,11 +76,6 @@ def PSO(predictions, y_true):
                 global_opt_fitness = particle_fitness
                 global_opt = particles[j]
                 global_changed_cnt = 0
-            else:
-                # If global optimum hasn't changed for 1k iterations, then return global opt.
-                global_changed_cnt += 1
-                if global_changed_cnt >= 1000:
-                    return global_opt
 
             # Update weights/particles
             particles[j], v_i[j] = particle_optimization(particles[j], local_opt[j], global_opt, w, c_1, c_2,
@@ -88,8 +83,13 @@ def PSO(predictions, y_true):
             # Normalize weights
             particles[j] = particles[j] / np.sum(particles[j])
 
-        print('Global optima: {}'.format(global_opt_fitness))
-        print('Global optima weights: {}'.format(global_opt))
+        # If global optimum hasn't changed for 1k iterations, then return global opt.
+        global_changed_cnt += 1
+        if global_changed_cnt >= 1000:
+            return global_opt
+        elif global_changed_cnt == 0:
+            print('Global optima: {}'.format(global_opt_fitness))
+            print('Global optima weights: {}'.format(global_opt))
 
 
     return global_opt
