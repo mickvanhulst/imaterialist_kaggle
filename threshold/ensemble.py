@@ -24,7 +24,6 @@ def loss(models, y_true, weights=None, mean_version=None):
 
     # todo maybe we should split the predictions to predictions per sample?
     # currently it is supposed to be all predictions for all validation samples
-    print(y_pred)
     _loss = y_true * np.log(y_pred) + (1 - y_true) * np.log(1 - y_pred)
     # Should we calculate the mean here for each sample?
     # and then sum those means?
@@ -33,8 +32,8 @@ def loss(models, y_true, weights=None, mean_version=None):
     return _loss
 
 
-def hill_climbing(model_predictions, y_true, iterations=100):
-    """ Try to find optimal weights by looking in the nieghborhood of the
+def hill_climbing(model_predictions, y_true, iterations=1000):
+    """ Try to find optimal weights by looking in the neighborhood of the
         current solution and only accepting it if it is an improvement
     """
     weights = np.random.rand(len(model_predictions))
@@ -44,7 +43,7 @@ def hill_climbing(model_predictions, y_true, iterations=100):
     current_loss = loss(model_predictions, y_true, weights)
 
     for i in tqdm(range(iterations)):
-        new_weights = weights + np.random.normal(scale=0.1, size=len(weights))
+        new_weights = weights + np.random.normal(scale=0.01, size=len(weights))
         new_weights[new_weights<0] = 0.0001
         new_weights /= np.sum(new_weights)
 
@@ -64,7 +63,7 @@ def ensemble_test_results(model_results, weights=None, mean_version='harm_mean')
     else:
         if mean_version == 'harm_mean':
             # Calculate harmonic mean (only defined for positive real numbers).
-            return len(model_results) / np.sum([1.0 / res for res in model_results])
+            return len(model_results) / np.sum([1.0 / res for res in model_results], axis=0)
 
         else:
             # Mean
@@ -90,7 +89,7 @@ def main():
 
     for i in range(len(pred_loss)):
        print('Loss prediction {}: {}'.format(i, pred_loss[i]))
-
+    print(weights)
     # 2. Apply weights using test results.
     y_pred = ensemble_test_results(predictions, weights)
 
