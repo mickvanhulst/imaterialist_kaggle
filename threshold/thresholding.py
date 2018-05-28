@@ -68,13 +68,13 @@ def thresholding(model_name, model_class, datafile='../data/validation.json', da
 
     model = load_model(model_name)
 
-    # y_pred = model.predict_generator(val_generator,
-    #                                  steps=None,
-    #                                  verbose=1)
-    #
-    # np.save("y_pred", y_pred)
+    y_pred = model.predict_generator(val_generator,
+                                     steps=None,
+                                     verbose=1)
 
-    y_pred = np.load('./y_pred.npy')
+    np.save("y_pred", y_pred)
+
+    # y_pred = np.load('./y_pred.npy')
 
     thresholds = np.linspace(0.0, 1.0, num=50)
     best_thresh_list = []
