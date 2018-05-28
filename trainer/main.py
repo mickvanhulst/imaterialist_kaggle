@@ -8,6 +8,7 @@ import os.path
 
 import numpy as np
 
+from networks.xception import xception_model
 from utils import params
 from utils.load_model import load_model
 import argparse
@@ -64,17 +65,22 @@ def main(GCP, job_dir):
 
     history = training.train_top(generator_train=training_generator, generator_val=validation_generator,
                                  model=model, base_model=base_model, loss="binary_crossentropy",
-                                 steps_per_epoch=None, epochs=2, optimizer=optimizer, verbose=2)
+                                 steps_per_epoch=160, epochs=50, optimizer=optimizer, verbose=2)
 
-    # accuracy = history.history['acc']
-    # # categorical_accuracy = history.history['categorical_accuracy']
+    accuracy_train = history.history['acc']
+    loss_train = history.history['loss']
+    accuracy_val = history.history['val_acc']
+    loss_val = history.history['val_loss']
+    # categorical_accuracy = history.history['categorical_accuracy']
     # F1 = history.history['F1']
     # thresholds = history.history['threshold']
-    #
-    # print("Best Accuracy:", accuracy[np.argmax(F1)])
-    # # print("Best Categorical Accuracy:", categorical_accuracy[np.argmax(F1)])
-    # print("Best F1:", F1[np.argmax(F1)])
-    # print("Best Thresholds:", thresholds[np.argmax(F1)])
+
+    best_idx = np.argmin(loss_val)
+    print("Best Training Accuracy: {} \t Validation Accuracy: {}".format(np.max(accuracy_train), accuracy_val[best_idx]))
+    print("Best Training Loss: {} \t Validation Loss: {}".format(np.max(loss_train), loss_val[best_idx]))
+    # # print("Best Categorical Accuracy:", categorical_accuracy[best_idx])
+    # print("Best F1:", F1[best_idx])
+    # print("Best Thresholds:", thresholds[best_idx])
 
     if not GCP:
         plt.bar(np.arange(len(training_generator.occurrences)), training_generator.occurrences)
@@ -89,18 +95,24 @@ def main(GCP, job_dir):
     optimizer = optimizers.Nadam(lr=1e-7)
 
     history = training.fine_tune(generator_train=training_generator, generator_val=validation_generator,
-                                 model=model, idx_lower=249, loss="binary_crossentropy",
-                                 steps_per_epoch=None, epochs=5, optimizer=optimizer, verbose=2)
+                                 model=model, idx_lower=115, loss="binary_crossentropy",
+                                 steps_per_epoch=160, epochs=100, optimizer=optimizer, verbose=2)
 
-    # accuracy = history.history['acc']
+    accuracy_train = history.history['acc']
+    loss_train = history.history['loss']
+    accuracy_val = history.history['val_acc']
+    loss_val = history.history['val_loss']
     # categorical_accuracy = history.history['categorical_accuracy']
     # F1 = history.history['F1']
     # thresholds = history.history['threshold']
 
-    # print("Best Accuracy:", accuracy[np.argmax(F1)])
-    # print("Best Categorical Accuracy:", categorical_accuracy[np.argmax(F1)])
-    # print("Best F1:", F1[np.argmax(F1)])
-    # print("Best Thresholds:", thresholds[np.argmax(F1)])
+    best_idx = np.argmin(loss_val)
+    print(
+        "Best Training Accuracy: {} \t Validation Accuracy: {}".format(np.max(accuracy_train), accuracy_val[best_idx]))
+    print("Best Training Loss: {} \t Validation Loss: {}".format(np.max(loss_train), loss_val[best_idx]))
+    # # print("Best Categorical Accuracy:", categorical_accuracy[best_idx])
+    # print("Best F1:", F1[best_idx])
+    # print("Best Thresholds:", thresholds[best_idx])
 
     if not GCP:
         plt.bar(np.arange(len(training_generator.occurrences)), training_generator.occurrences)
@@ -150,9 +162,9 @@ if __name__ == '__main__':
     if args.GCP and not args.job_dir:
         parser.error("--job-dir should be set if --GCP")
 
-    model_name = "inception_v3_model"
-    model_class = inception_v3_model
-    save_images = False
+    model_name = "xception_model"
+    model_class = xception_model
+    save_images = True
     input_dim = (224, 224, 3)
     n_classes = params.n_classes
     label_occ_threshold = 500
