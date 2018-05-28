@@ -9,6 +9,7 @@ import os.path
 import numpy as np
 
 from networks.xception import xception_model
+from threshold.thresholding import thresholding
 from utils import params
 from utils.load_model import load_model
 import argparse
@@ -126,20 +127,26 @@ def predict():
     global model_class
     global save_images
 
+    # model_name = "./best_model_{}.h5".format(model_name)
+    model_name = "./model_epoch09.h5"
+
+    thresholds, _ = thresholding(model_name, model_class,
+                              datafile='../data/validation.json', data_path='../data/img/validation/')
+
     print("Setting up Test Generator")
     validation_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=False)
     validation_generator = validation_generator.make_datagenerator(
-        datafile='./data/test.json', test=True, shuffle=False, data_path='./data/img/test/', save_images=save_images)
+        datafile='../data/test.json', test=True, shuffle=False, data_path='../data/img/test/', save_images=save_images)
 
     print("Setting up Model...")
-    if os.path.isfile("./best_model_{}.h5".format(model_name)):
+    if os.path.isfile(model_name):
         print("Loading existing model ...")
-        model = load_model("./best_model_{}.h5".format(model_name))
+        model = load_model(model_name)
     else:
-        print("Model 'best_model_{}.h5' not found!".format(model_name))
+        print("Model '{}' not found!".format(model_name))
         raise Exception("You need to train a model before you can make predictions.")
 
-    create_submission(validation_generator, model, steps=None)
+    create_submission(validation_generator, model, steps=None, thresholds=thresholds)
 
 
 if __name__ == '__main__':
@@ -168,5 +175,5 @@ if __name__ == '__main__':
     input_dim = (224, 224, 3)
     n_classes = params.n_classes
     label_occ_threshold = 500
-    main(args.GCP, args.job_dir)
-    #predict()
+    # main(args.GCP, args.job_dir)
+    predict()
