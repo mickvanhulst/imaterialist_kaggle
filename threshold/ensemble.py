@@ -72,7 +72,7 @@ def ensemble_test_results(model_results, weights=None, mean_version='harm_mean')
 def main():
     """the best"""
     # 1. Find weights using validation results.
-    y_true = np.random.rand(228,10000)
+    y_true = np.random.randint(2, size=(228,10000))
     predictions = [np.random.rand(228,10000) for i in range(5)]
 
     # weights = [ 0.01, 0.99,]
