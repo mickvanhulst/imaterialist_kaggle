@@ -15,7 +15,7 @@ def loss(models, y_true, weights=None, mean_version=None):
         y_pred = sum([model_prediction * weight for model_prediction, weight in zip(models, weights)])
     else:
         if mean_version == 'harm_mean':
-            y_pred = len(models) / np.sum([1.0 / model for model in models])
+            y_pred = len(models) / np.sum([1.0 / model for model in models], axis=0)
         elif mean_version == 'mean':
             y_pred = np.mean(models, axis=0)
         else:
@@ -24,17 +24,16 @@ def loss(models, y_true, weights=None, mean_version=None):
 
     # todo maybe we should split the predictions to predictions per sample?
     # currently it is supposed to be all predictions for all validation samples
-
+    print(y_pred)
     _loss = y_true * np.log(y_pred) + (1 - y_true) * np.log(1 - y_pred)
     # Should we calculate the mean here for each sample?
     # and then sum those means?
 
-    _loss = np.sum(-np.sum(_loss, axis=0))
-    print(_loss)
+    _loss = np.sum(-np.sum(_loss, axis=0)) / (228 * y_pred.shape[0])
     return _loss
 
 
-def hill_climbing(model_predictions, y_true, iterations=10):
+def hill_climbing(model_predictions, y_true, iterations=100):
     """ Try to find optimal weights by looking in the nieghborhood of the
         current solution and only accepting it if it is an improvement
     """
@@ -88,8 +87,9 @@ def main():
     print('Ensemble loss weighted mean: {}'.format(ensemble_loss))
     print('Ensemble loss harmonic mean: {}'.format(ensemble_loss_harm))
     print('Ensemble loss normal mean: {}'.format(ensemble_loss_mean))
+
     for i in range(len(pred_loss)):
-        print('Loss prediction {}: {}'.format(i, pred_loss[i]))
+       print('Loss prediction {}: {}'.format(i, pred_loss[i]))
 
     # 2. Apply weights using test results.
     y_pred = ensemble_test_results(predictions, weights)
