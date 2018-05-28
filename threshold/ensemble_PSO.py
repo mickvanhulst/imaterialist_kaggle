@@ -60,7 +60,9 @@ def PSO(predictions, y_true):
     # Parameter which PSO needs.
     v_i = [0 for x in range(n_particles)]
 
-    # Going to try to optimize the weights such that
+    global_changed_cnt = 0
+
+    # Going to try to optimize the weights such that the loss is minimized.
     for i in tqdm(range(max_iter)):
         for j in range(n_particles):
             # Multiply particles by predictions.
@@ -73,6 +75,12 @@ def PSO(predictions, y_true):
             if particle_fitness < global_opt_fitness:
                 global_opt_fitness = particle_fitness
                 global_opt = particles[j]
+                global_changed_cnt = 0
+            else:
+                # If global optimum hasn't changed for 1k iterations, then return global opt.
+                global_changed_cnt += 1
+                if global_changed_cnt >= 1000:
+                    return global_opt
 
             # Update weights/particles
             particles[j], v_i[j] = particle_optimization(particles[j], local_opt[j], global_opt, w, c_1, c_2,
