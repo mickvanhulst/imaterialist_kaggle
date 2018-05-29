@@ -1,4 +1,4 @@
-from batch_generator.batch_gen_weights import MultiLabelGenerator
+from batch_generator.batch_gen_barebones import DataGenerator
 from networks import training, loss
 from networks.inceptionv3 import inception_v3_model
 from networks.mobilenet import mobilenet_model
@@ -32,19 +32,16 @@ def main(GCP, job_dir):
     if GCP:
         data_folder = 'gs://mlip/'
     else:
-        data_folder = './data/'
+        data_folder = '../data/'
 
     print("Creating Data Generators...")
-    training_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=True)
-    training_generator = training_generator.make_datagenerator(
+    training_generator = DataGenerator(
         datafile='{}train.json'.format(data_folder), data_path='{}img/train/'.format(data_folder),
-        save_images=save_images, label_occ_threshold=label_occ_threshold, batch_size=64,
-        shuffle=True, train=True, thresholdsmaller=False)
+        batch_size=64, shuffle=True)
 
-    validation_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=True)
-    validation_generator = validation_generator.make_datagenerator(
+    validation_generator = DataGenerator(
         datafile='{}validation.json'.format(data_folder), data_path='{}img/validation/'.format(data_folder),
-        save_images=save_images, batch_size=64, shuffle=True)
+        batch_size=64, shuffle=True)
 
     print("Training batches:", len(training_generator))
     print("Validation batches:", len(validation_generator))
@@ -61,12 +58,19 @@ def main(GCP, job_dir):
     #######################################
     #          Top Training               #
     #######################################
-    print("Starting Top Training...")
-    optimizer = optimizers.Nadam(lr=1e-3)
+    print("Starting Warm-up...")
+    optimizer = optimizers.Nadam()
 
     history = training.train_top(generator_train=training_generator, generator_val=validation_generator,
                                  model=model, base_model=base_model, loss="binary_crossentropy",
-                                 steps_per_epoch=160, epochs=50, optimizer=optimizer, verbose=2)
+                                 steps_per_epoch=50, epochs=1, optimizer=optimizer, verbose=1)
+
+    print("Starting Top Training...")
+    optimizer = optimizers.SGD(momentum=0.8, nesterov=True)
+
+    history = training.train_top(generator_train=training_generator, generator_val=validation_generator,
+                                 model=model, base_model=base_model, loss="binary_crossentropy",
+                                 steps_per_epoch=160, epochs=50, optimizer=optimizer, verbose=1)
 
     accuracy_train = history.history['acc']
     loss_train = history.history['loss']
@@ -83,21 +87,16 @@ def main(GCP, job_dir):
     # print("Best F1:", F1[best_idx])
     # print("Best Thresholds:", thresholds[best_idx])
 
-    if not GCP:
-        plt.bar(np.arange(len(training_generator.occurrences)), training_generator.occurrences)
-
-        plt.title("Class Occurrences During Training")
-        plt.show()
 
     #######################################
     #          Fine Tuning                #
     #######################################
     print("Starting Fine Tuning...")
-    optimizer = optimizers.Nadam(lr=1e-7)
+    optimizer = optimizers.SGD(lr=1e-7)
 
     history = training.fine_tune(generator_train=training_generator, generator_val=validation_generator,
                                  model=model, idx_lower=115, loss="binary_crossentropy",
-                                 steps_per_epoch=160, epochs=100, optimizer=optimizer, verbose=2)
+                                 steps_per_epoch=160, epochs=100, optimizer=optimizer, verbose=1)
 
     accuracy_train = history.history['acc']
     loss_train = history.history['loss']
@@ -114,12 +113,6 @@ def main(GCP, job_dir):
     # # print("Best Categorical Accuracy:", categorical_accuracy[best_idx])
     # print("Best F1:", F1[best_idx])
     # print("Best Thresholds:", thresholds[best_idx])
-
-    if not GCP:
-        plt.bar(np.arange(len(training_generator.occurrences)), training_generator.occurrences)
-
-        plt.title("Class Occurrences During Training")
-        plt.show()
 
 
 def predict():
@@ -171,9 +164,10 @@ if __name__ == '__main__':
 
     model_name = "xception_model"
     model_class = xception_model
+
     save_images = True
     input_dim = (224, 224, 3)
     n_classes = params.n_classes
-    label_occ_threshold = 500
-    # main(args.GCP, args.job_dir)
-    predict()
+    label_occ_threshold = 100000
+    main(args.GCP, args.job_dir)
+    # predict()
