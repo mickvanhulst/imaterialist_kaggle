@@ -57,7 +57,7 @@ class DataGenerator(keras.utils.Sequence):
         # Shape of train_df ['imageId', 'url', 'labelId'], shape: (1014544, 3)
         self.df = df
 
-        self.indices = self.df.index.tolist()
+        self.indices = self._get_existing_indices()
 
         # Length Total Dataset
         self.n_samples = len(self.df)
@@ -70,6 +70,14 @@ class DataGenerator(keras.utils.Sequence):
         """
         if self.shuffle:
             np.random.shuffle(self.indices)
+
+    def _get_existing_indices(self):
+        indices = []
+        for idx in self.df.index.tolist():
+            img_path = os.path.join(self.path, str(idx) + '.jpg')
+            if os.path.isfile(img_path):
+                indices.append(idx)
+        return indices
 
     def _labels_to_array(self, labels):
         """
@@ -93,7 +101,7 @@ class DataGenerator(keras.utils.Sequence):
         batch_indices = self.indices[index * self.batch_size:(index + 1) * self.batch_size]
         return self._get_data(batch_indices)
 
-    def get_image(self, url, ID):
+    def get_image(self, ID):
         """
         download image from url, reshapes it to dimension size e.g (128x128) and normalize it
         :returns np array of image dimension
@@ -105,17 +113,8 @@ class DataGenerator(keras.utils.Sequence):
             image = Image.open(img_path)
             image = np.asarray(image, dtype=K.floatx())
             return image / 255
-
-        response = http_client.request("GET", url[0])
-        image = Image.open(io.BytesIO(response.data))
-        image = image.convert("RGB")
-        image = image.resize(self.dim, Image.ANTIALIAS)
-
-        image.save(img_path, optimize=True, quality=85)
-
-        image = np.asarray(image, dtype=K.floatx())
-
-        return image / 255
+        else:
+            raise Exception("Label should not be here!")
 
     def _get_data(self, idxs):
         """
@@ -133,14 +132,14 @@ class DataGenerator(keras.utils.Sequence):
         for i, idx in enumerate(idxs):
             try:
                 row = self.df.loc[idx]
-                url = row['url']
-                image = self.get_image(url, idx)
+
+                image = self.get_image(idx)
                 X[i, ] = image
 
                 if not self.test:
                     y[i, ] = row['labelId']
             except Exception as e:
-                print("Exception|", e, "|", url)
+                print("Exception|", e, "|", row['url'])
 
         if not self.test:
             return X, y
