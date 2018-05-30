@@ -1,21 +1,13 @@
-import io
 import json
+import os
+
 import keras
 import keras.backend as K
 import numpy as np
 import pandas as pd
 import urllib3
 from PIL import Image
-from keras.preprocessing.image import ImageDataGenerator
-from collections import Counter
-
-from keras.utils import to_categorical
-from tensorflow.python.lib.io import file_io
 from tqdm import tqdm
-
-from networks.mobilenet import mobilenet_model
-
-import os
 
 from utils import params
 
@@ -26,10 +18,9 @@ http_client = urllib3.PoolManager(500)
 class DataGenerator(keras.utils.Sequence):
     """ Generates data for Keras """
 
-    def __init__(self, datafile, batch_size=32, dim=(224, 224), n_channels=3,
+    def __init__(self, datafile, batch_size=32, dim=(299, 299), n_channels=3,
                  n_classes=params.n_classes, shuffle=True, test=False, data_path='./data/img/'):
         """ Initialization """
-        self.n = 0
         self.test = test
         self.shuffle = shuffle
 
@@ -60,7 +51,7 @@ class DataGenerator(keras.utils.Sequence):
         self.indices = self._get_existing_indices()
 
         # Length Total Dataset
-        self.n_samples = len(self.df)
+        self.n_samples = len(self.indices)
 
         self.on_epoch_end()
 
@@ -72,11 +63,26 @@ class DataGenerator(keras.utils.Sequence):
             np.random.shuffle(self.indices)
 
     def _get_existing_indices(self):
+        """
+        Check the data path which images are there
+        These may differ from the indices in the dataframe
+        :return:
+        """
+        if self.test:  # All test images are there
+            return self.df.index.tolist()
+
+        generator_name = "train_idxs" if "train" in self.path else "val_idxs"
+        idx_path = os.path.join(self.path, generator_name + ".npy")
+        if os.path.isfile(idx_path):
+            return np.load(idx_path)
+
         indices = []
-        for idx in self.df.index.tolist():
+        for idx in tqdm(self.df.index.tolist(), desc="Validating Dataset", unit="images"):
             img_path = os.path.join(self.path, str(idx) + '.jpg')
             if os.path.isfile(img_path):
                 indices.append(idx)
+
+        np.save(idx_path, indices)
         return indices
 
     def _labels_to_array(self, labels):
