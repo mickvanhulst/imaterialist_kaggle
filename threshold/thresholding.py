@@ -5,6 +5,7 @@ import pandas as pd
 from sklearn.metrics import f1_score
 from tqdm import tqdm
 
+from batch_generator.batch_gen_barebones import DataGenerator
 from batch_generator.batch_gen_weights import MultiLabelGenerator
 from networks.inceptionv3 import inception_v3_model
 from networks.xception import xception_model
@@ -59,12 +60,10 @@ def get_labels():
 
 
 def thresholding(model_name, model_class, datafile='../data/validation.json', data_path='../data/img/validation/'):
-    y_true = get_labels()
+    val_generator = DataGenerator(datafile=datafile, data_path=data_path, test=False, shuffle=False, batch_size=64)
 
-    val_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=False)
-    val_generator = val_generator.make_datagenerator(
-        datafile=datafile, data_path=data_path, save_images=True,
-        test=False, shuffle=False, batch_size=64)
+    # y_true = get_labels()
+    y_true = np.array(val_generator.df['labelId'].tolist())
 
     model = load_model(model_name)
 
@@ -107,7 +106,6 @@ def thresholding(model_name, model_class, datafile='../data/validation.json', da
         val[val < best_thresh_list] = 0
 
     print(best_thresh_list)
-    np.savetxt("thresholds_{}.npy".format(model_name), best_thresh_list)
 
     return best_thresh_list, y_pred
 

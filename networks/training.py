@@ -52,7 +52,8 @@ def train_top(generator_train, generator_val, model, base_model,
                                   validation_data=generator_val,
                                   validation_steps=validation_steps,
                                   callbacks=callbacks,
-                                  max_queue_size=5
+                                  max_queue_size=5,
+                                  # use_multiprocessing=True
                                   )
     return history
 
