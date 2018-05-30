@@ -25,14 +25,14 @@ def get_callbacks(job_dir, val_generator, GCP=False, val_steps=None, resume_scor
 
     callbacks.append(
         ReduceLROnPlateau(monitor=metric,
-                          patience=3,
+                          patience=1,
                           verbose=verbose,
                           mode=mode)
     )
 
     callbacks.append(
         EarlyStopping(monitor=metric,
-                      min_delta=0.0001,
+                      min_delta=0,
                       patience=10,
                       mode=mode,
                       verbose=verbose)

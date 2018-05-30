@@ -1,4 +1,4 @@
-from batch_generator.batch_gen_barebones import DataGenerator
+from batch_generator.batch_gen_weights import MultiLabelGenerator
 from networks import training, loss
 from networks.inceptionv3 import inception_v3_model
 from networks.mobilenet import mobilenet_model
@@ -9,7 +9,7 @@ import os.path
 import numpy as np
 
 from networks.xception import xception_model
-from ensemble.thresholding import thresholding
+#from ensemble.thresholding import thresholding
 from utils import params
 from utils.load_model import load_model
 import argparse
@@ -35,13 +35,16 @@ def main(GCP, job_dir):
         data_folder = '../data/'
 
     print("Creating Data Generators...")
-    training_generator = DataGenerator(
+    training_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=True)
+    training_generator = training_generator.make_datagenerator(
         datafile='{}train.json'.format(data_folder), data_path='{}img/train/'.format(data_folder),
-        batch_size=64, shuffle=True)
+        save_images=save_images, label_occ_threshold=label_occ_threshold, batch_size=64,
+        shuffle=True, train=True, thresholdsmaller=False)
 
-    validation_generator = DataGenerator(
+    validation_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=True)
+    validation_generator = validation_generator.make_datagenerator(
         datafile='{}validation.json'.format(data_folder), data_path='{}img/validation/'.format(data_folder),
-        batch_size=64, shuffle=True)
+        save_images=save_images, batch_size=64, shuffle=True)
 
     print("Training batches:", len(training_generator))
     print("Validation batches:", len(validation_generator))
@@ -66,18 +69,18 @@ def main(GCP, job_dir):
     #          Top Training               #
     #######################################
     print("Starting Warm-up...")
-    # optimizer = optimizers.Nadam()
-    #
-    # history = training.train_top(generator_train=training_generator, generator_val=validation_generator,
-    #                              model=model, base_model=base_model, loss="binary_crossentropy",
-    #                              steps_per_epoch=800, epochs=1, optimizer=optimizer, verbose=1)
-
-    print("Starting Top Training...")
-    optimizer = optimizers.SGD(lr=1e-2, momentum=1.0, nesterov=True)
+    optimizer = optimizers.Nadam()
 
     history = training.train_top(generator_train=training_generator, generator_val=validation_generator,
                                  model=model, base_model=base_model, loss="binary_crossentropy",
-                                 steps_per_epoch=800, epochs=50, optimizer=optimizer, verbose=1)
+                                 steps_per_epoch=800, epochs=1, optimizer=optimizer, verbose=1)
+
+    print("Starting Top Training...")
+    optimizer = optimizers.SGD(lr=1e-3, momentum=1.0, nesterov=True)
+
+    history = training.train_top(generator_train=training_generator, generator_val=validation_generator,
+                                 model=model, base_model=base_model, loss="binary_crossentropy",
+                                 steps_per_epoch=None, epochs=8, optimizer=optimizer, verbose=1)
 
     accuracy_train = history.history['acc']
     loss_train = history.history['loss']
@@ -97,54 +100,54 @@ def main(GCP, job_dir):
     #######################################
     #          Fine Tuning                #
     #######################################
-    print("Starting Fine Tuning...")
-    optimizer = optimizers.SGD(lr=1e-4, momentum=0.9, nesterov=True)
-
-    history = training.fine_tune(generator_train=training_generator, generator_val=validation_generator,
-                                 model=model, idx_lower=115, loss="binary_crossentropy",
-                                 steps_per_epoch=160, epochs=100, optimizer=optimizer, verbose=1)
-
-    accuracy_train = history.history['acc']
-    loss_train = history.history['loss']
-    accuracy_val = history.history['val_acc']
-    loss_val = history.history['val_loss']
-    # categorical_accuracy = history.history['categorical_accuracy']
-    # F1 = history.history['F1']
-    # thresholds = history.history['threshold']
-
-    best_idx = np.argmin(loss_val)
-    print(
-        "Best Training Accuracy: {} \t Validation Accuracy: {}".format(np.max(accuracy_train), accuracy_val[best_idx]))
-    print("Best Training Loss: {} \t Validation Loss: {}".format(np.max(loss_train), loss_val[best_idx]))
-    # # print("Best Categorical Accuracy:", categorical_accuracy[best_idx])
+    # print("Starting Fine Tuning...")
+    # optimizer = optimizers.SGD(lr=1e-4, momentum=0.9, nesterov=True)
+    #
+    # history = training.fine_tune(generator_train=training_generator, generator_val=validation_generator,
+    #                              model=model, idx_lower=115, loss="binary_crossentropy",
+    #                              steps_per_epoch=160, epochs=100, optimizer=optimizer, verbose=1)
+    #
+    # accuracy_train = history.history['acc']
+    # loss_train = history.history['loss']
+    # accuracy_val = history.history['val_acc']
+    # loss_val = history.history['val_loss']
+    # # categorical_accuracy = history.history['categorical_accuracy']
+    # # F1 = history.history['F1']
+    # # thresholds = history.history['threshold']
+    #
+    # best_idx = np.argmin(loss_val)
+    # print(
+    #     "Best Training Accuracy: {} \t Validation Accuracy: {}".format(np.max(accuracy_train), accuracy_val[best_idx]))
+    # print("Best Training Loss: {} \t Validation Loss: {}".format(np.max(loss_train), loss_val[best_idx]))
+    # # # print("Best Categorical Accuracy:", categorical_accuracy[best_idx])
     # print("Best F1:", F1[best_idx])
     # print("Best Thresholds:", thresholds[best_idx])
 
 
-def predict():
-    global model_name
-    global model_class
-    global save_images
-
-    # model_name = "./best_model_{}.h5".format(model_name)
-    model_name = "../results/models/Xception_full_latest.h5"
-
-    thresholds, _ = thresholding(model_name, model_class,
-                                 datafile='../data/validation.json', data_path='../data/img/validation/')
-
-    print("Setting up Test Generator")
-    test_generator = DataGenerator(
-        datafile='../data/test.json', test=True, shuffle=False, data_path='../data/img/test/')
-
-    print("Setting up Model...")
-    if os.path.isfile(model_name):
-        print("Loading existing model ...")
-        model = load_model(model_name)
-    else:
-        print("Model '{}' not found!".format(model_name))
-        raise Exception("You need to train a model before you can make predictions.")
-
-    create_submission(test_generator, model, steps=None, thresholds=thresholds)
+# def predict():
+#     global model_name
+#     global model_class
+#     global save_images
+#
+#     # model_name = "./best_model_{}.h5".format(model_name)
+#     model_name = "../results/models/Xception_full_latest.h5"
+#
+#     thresholds, _ = thresholding(model_name, model_class,
+#                                  datafile='../data/validation.json', data_path='../data/img/validation/')
+#
+#     print("Setting up Test Generator")
+#     test_generator = MultiLabelGenerator(
+#         datafile='../data/test.json', test=True, shuffle=False, data_path='../data/img/test/')
+#
+#     print("Setting up Model...")
+#     if os.path.isfile(model_name):
+#         print("Loading existing model ...")
+#         model = load_model(model_name)
+#     else:
+#         print("Model '{}' not found!".format(model_name))
+#         raise Exception("You need to train a model before you can make predictions.")
+#
+#     create_submission(test_generator, model, steps=None, thresholds=thresholds)
 
 
 if __name__ == '__main__':
