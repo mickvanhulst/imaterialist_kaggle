@@ -94,9 +94,18 @@ def main():
     mean_res = ensemble_test_results(predictions_test, mean_version='mean')
     weighted_mean = ensemble_test_results(predictions_test, weights)
 
-    np.save('./ensemble_results_harm_mean', harmonic_mean_res)
-    np.save('./ensemble_results_mean', mean_res)
-    np.save('./ensemble_results_hc', weighted_mean)
+    harmonic_mean_res_v = ensemble_test_results(predictions)
+    mean_res_v = ensemble_test_results(predictions, mean_version='mean')
+    weighted_mean_v = ensemble_test_results(predictions, weights)
+
+    np.save('./test/ensemble_results_harm_mean', harmonic_mean_res)
+    np.save('./test/ensemble_results_mean', mean_res)
+    np.save('./test/ensemble_results_hc', weighted_mean)
+
+    np.save('./val/ensemble_results_harm_mean', harmonic_mean_res_v)
+    np.save('./val/ensemble_results_mean', mean_res_v)
+    np.save('./val/ensemble_results_hc', weighted_mean_v)
+    np.save('./val/y_true', y_true)
 
 if __name__ == "__main__":
     main()
