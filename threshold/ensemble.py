@@ -1,12 +1,7 @@
 
 import numpy as np
 from tqdm import tqdm
-from sklearn.metrics import log_loss
-
-# we build a custom classifier to be able to use the 
-# sklearn VotingClassifier
-# def ensemble():
-#     pass
+from batch_generator.batch_gen_weights import MultiLabelGenerator
 
 def loss(models, y_true, weights=None, mean_version=None):
     # todo: get the actual shape of the predictions to fix this function
@@ -30,7 +25,6 @@ def loss(models, y_true, weights=None, mean_version=None):
 
     _loss = np.sum(-np.sum(_loss, axis=0)) / (228 * y_pred.shape[0])
     return _loss
-
 
 def hill_climbing(model_predictions, y_true, iterations=1000):
     """ Try to find optimal weights by looking in the neighborhood of the
@@ -74,6 +68,7 @@ def main():
     # 1. Find weights using validation results.
     y_true = np.random.randint(2, size=(228,10000))
     predictions = [np.random.rand(228,10000) for i in range(5)]
+    predictions_test = 1
 
     # weights = [ 0.01, 0.99,]
     weights = hill_climbing(predictions, y_true)
@@ -95,6 +90,22 @@ def main():
 
     # 3. Export predictions and load them using the predictions function in main.py.
     # DON't forget to also use the thresholds there.
+    harmonic_mean_res = ensemble_test_results(predictions_test)
+    mean_res = ensemble_test_results(predictions_test, mean_version='mean')
+    weighted_mean = ensemble_test_results(predictions_test, weights)
+
+    harmonic_mean_res_v = ensemble_test_results(predictions)
+    mean_res_v = ensemble_test_results(predictions, mean_version='mean')
+    weighted_mean_v = ensemble_test_results(predictions, weights)
+
+    np.save('./test/ensemble_results_harm_mean', harmonic_mean_res)
+    np.save('./test/ensemble_results_mean', mean_res)
+    np.save('./test/ensemble_results_hc', weighted_mean)
+
+    np.save('./val/ensemble_results_harm_mean', harmonic_mean_res_v)
+    np.save('./val/ensemble_results_mean', mean_res_v)
+    np.save('./val/ensemble_results_hc', weighted_mean_v)
+    np.save('./val/y_true', y_true)
 
 if __name__ == "__main__":
     main()
