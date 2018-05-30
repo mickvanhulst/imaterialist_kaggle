@@ -1,1 +1,2 @@
 results/models/*.h5 filter=lfs diff=lfs merge=lfs -text
+precomputing/raw_preds/*.npy filter=lfs diff=lfs merge=lfs -text
