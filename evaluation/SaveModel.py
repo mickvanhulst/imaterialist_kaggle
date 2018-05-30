@@ -5,7 +5,7 @@ import operator
 
 
 class SaveModel(Callback):
-    def __init__(self, job_dir, GCP, metric, mode, vebose=1):
+    def __init__(self, job_dir, GCP, metric, mode, resume_score = None, verbose=1):
         """
         The F1 score averaged over all classes
         :param validation_generator:
@@ -13,10 +13,13 @@ class SaveModel(Callback):
         :param steps: number of validation batches, default to whole validation dataset
         """
         super().__init__()
-        self.best_score = float('inf') if mode is "min" else -float('inf')
+        if resume_score is None:
+            self.best_score = float('inf') if mode is "min" else -float('inf')
+        else:
+            self.best_score = resume_score
         self.job_dir = job_dir
         self.GCP = GCP
-        self.verbose = vebose
+        self.verbose = verbose
         self.metric = metric
         self.comparison = operator.lt if mode is "min" else operator.gt
 

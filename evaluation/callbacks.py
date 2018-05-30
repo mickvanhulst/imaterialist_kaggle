@@ -3,7 +3,7 @@ from evaluation.SaveModel import SaveModel
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 
 
-def get_callbacks(job_dir, val_generator, GCP=False, val_steps=None, verbose=1):
+def get_callbacks(job_dir, val_generator, GCP=False, val_steps=None, resume_score=None, verbose=1):
 
     callbacks = []
 
@@ -18,7 +18,9 @@ def get_callbacks(job_dir, val_generator, GCP=False, val_steps=None, verbose=1):
         mode = "min"
 
     callbacks.append(
-        SaveModel(job_dir, GCP, metric, mode)
+        SaveModel(job_dir, GCP, metric, mode,
+                  resume_score=resume_score,
+                  verbose=verbose)
     )
 
     callbacks.append(
