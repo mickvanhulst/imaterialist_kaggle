@@ -9,7 +9,7 @@ import os.path
 import numpy as np
 
 from networks.xception import xception_model
-from threshold.thresholding import thresholding
+from ensemble.thresholding import thresholding
 from utils import params
 from utils.load_model import load_model
 import argparse

@@ -60,20 +60,21 @@ def get_labels():
 
 
 def thresholding(model_name, model_class, datafile='../data/validation.json', data_path='../data/img/validation/'):
-    val_generator = DataGenerator(datafile=datafile, data_path=data_path, test=False, shuffle=False, batch_size=64)
+    # val_generator = DataGenerator(datafile=datafile, data_path=data_path, test=False, shuffle=False, batch_size=64)
+    #
+    y_true = get_labels()
+    # y_true = np.array(val_generator.df['labelId'].tolist())
+    #
+    # model = load_model(model_name)
+    #
+    # y_pred = model.predict_generator(val_generator,
+    #                                  steps=None,
+    #                                  verbose=1)
+    #
+    # np.save("y_pred", y_pred)
 
-    # y_true = get_labels()
-    y_true = np.array(val_generator.df['labelId'].tolist())
-
-    model = load_model(model_name)
-
-    y_pred = model.predict_generator(val_generator,
-                                     steps=None,
-                                     verbose=1)
-
-    np.save("y_pred", y_pred)
-
-    # y_pred = np.load('./y_pred.npy')
+    # y_pred = np.load('./y_pred.npy').
+    y_pred = np.load('./ensemble_results/val/mean.npy')
 
     thresholds = np.linspace(0.0, 1.0, num=50)
     best_thresh_list = []
@@ -93,8 +94,6 @@ def thresholding(model_name, model_class, datafile='../data/validation.json', da
             score = f1_score(y_true_temp, y_pred_thresh, average="micro")
             score = 0 if np.isnan(score) else score
 
-            # print("f1 score", score)
-
             if score > high_score:
                 best_threshold = threshold
                 high_score = score
@@ -104,6 +103,8 @@ def thresholding(model_name, model_class, datafile='../data/validation.json', da
     for i, val in enumerate(y_pred):
         val[val >= best_thresh_list] = 1
         val[val < best_thresh_list] = 0
+
+    np.save('./ensemble_results/thresholds/mean.npy', best_thresh_list)
 
     print(best_thresh_list)
 
