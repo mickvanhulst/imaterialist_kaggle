@@ -84,12 +84,9 @@ def main():
 
     for i in range(len(pred_loss)):
        print('Loss prediction {}: {}'.format(i, pred_loss[i]))
-    print(weights)
-    # 2. Apply weights using test results.
-    y_pred = ensemble_test_results(predictions, weights)
+    print('Weights hill-climbing:'.format(weights))
 
     # 3. Export predictions and load them using the predictions function in main.py.
-    # DON't forget to also use the thresholds there.
     harmonic_mean_res = ensemble_test_results(predictions_test)
     mean_res = ensemble_test_results(predictions_test, mean_version='mean')
     weighted_mean = ensemble_test_results(predictions_test, weights)

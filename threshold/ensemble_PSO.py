@@ -39,14 +39,13 @@ def particle_optimization(particle, global_opt, local_opt, w, c_1, c_2, v_i):
 def PSO(predictions, y_true):
     w = .7298
     c_1 = c_2 = 1.49618
-    max_iter = 1000
-    n_particles = 10
+    max_iter = 3500
+    n_particles = 15
 
     # Particles equals weights, init local and global opt.
     particles = [np.random.rand(len(predictions)) for x in range(n_particles)]
     # Normalize weights
     particles = [weights / np.sum(weights) for weights in particles]
-
 
     # Init global/local fitness, which will be optimized.
     local_opt_fitness = [np.inf for i in range(len(particles))]
@@ -110,17 +109,29 @@ def ensemble_test_results(model_results, weights=None, mean_version='harm_mean')
 
 def main():
     """the best"""
+    # 0. Average >100.000 <100.000
+    list_100k = ['y_pred_incept_higher_100000_model', 'y_pred_incept_lower_100000_model', 'Xception_occ100000', 'y_pred_incept_lower_100000_model']
+    y_pred_avg = np.mean([np.load('./val/{}'.format(i)) for i in list_100k])
+
     # 1. Find weights using validation results.
-    y_true = np.random.randint(2, size=(228,10000))
-    predictions = [np.random.rand(228,10000) for i in range(5)]
+    list_models = ['y_pred_incept_all_final_wof1_model_epoch20', 'y_pred_incept_all_final_wof1_model_epoch29', 'y_pred_incept_all(24maybestsofar)',
+                   'Xception_full_latest']
+
+    y_true = np.load('./val/y_true')
+    predictions = [np.load('./val/{}'.format(i)) for i in list_models]
+    predictions.append(y_pred_avg)
+    predictions_test = 1
 
     # weights = [ 0.01, 0.99,]
     weights = PSO(predictions, y_true)
+    np.save('./weights/pso_weights', weights)
 
     # 2. Apply weights using test results.
-    y_pred = ensemble_test_results(predictions, weights)
+    #y_pred = ensemble_test_results(predictions, weights)
+    y_pred_v = ensemble_test_results(predictions, weights)
 
-    np.save('./ensemble_results_PSO', y_pred)
+    #np.save('./test/ensemble_results_harm_mean', y_pred_v)
+    np.save('./val/ensemble_results_PSO', y_pred_v)
 
 if __name__ == "__main__":
     main()
