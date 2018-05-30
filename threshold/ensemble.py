@@ -5,7 +5,7 @@ from batch_generator.batch_gen_weights import MultiLabelGenerator
 
 def loss(models, y_true, weights=None, mean_version=None):
     # todo: get the actual shape of the predictions to fix this function
-    # apply the weights to all the models, and sum the predictions
+    # apply the weights to all the results, and sum the predictions
     if weights is not None:
         y_pred = sum([model_prediction * weight for model_prediction, weight in zip(models, weights)])
     else:

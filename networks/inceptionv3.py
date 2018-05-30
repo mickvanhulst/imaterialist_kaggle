@@ -20,7 +20,8 @@ def inception_v3_model(n_outputs, n_features=1024, optimizer='rmsprop', input_sh
 
     # add a global spatial average pooling layer
     x = base_model.output
-    x = GlobalAveragePooling2D(name="features")(x)
+    x = GlobalAveragePooling2D(name="features_original")(x)
+    x = Dense(n_features, activation='relu', name="features")(x)
     # Prediction layer, Probability per class
     predictions = Dense(n_outputs, activation=params.pred_activation, name="predictions")(x)
 

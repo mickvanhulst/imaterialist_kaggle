@@ -47,30 +47,37 @@ def main(GCP, job_dir):
     print("Validation batches:", len(validation_generator))
 
     training.set_callbacks(
-        get_callbacks(job_dir, None, GCP=GCP, val_steps=None, verbose=1)
+        get_callbacks(
+            job_dir,
+            None,
+            GCP=GCP,
+            val_steps=None,
+            resume_score=0.12198784052678235,
+            # resume_score=0.12167152163024092,  # val_loss of last model
+            verbose=1)
     )
     if not GCP:
         # If not training on GCP, try looking for an existing model.
-        if os.path.isfile("./best_model_{}.h5".format(model_name)):
+        if os.path.isfile("./model_epoch00.h5".format(model_name)):
             print("Loading existing model ...")
-            model = load_model("./best_model_{}.h5".format(model_name))
+            model = load_model("./model_epoch00.h5".format(model_name))
 
     #######################################
     #          Top Training               #
     #######################################
     print("Starting Warm-up...")
-    optimizer = optimizers.Nadam()
-
-    history = training.train_top(generator_train=training_generator, generator_val=validation_generator,
-                                 model=model, base_model=base_model, loss="binary_crossentropy",
-                                 steps_per_epoch=50, epochs=1, optimizer=optimizer, verbose=1)
+    # optimizer = optimizers.Nadam()
+    #
+    # history = training.train_top(generator_train=training_generator, generator_val=validation_generator,
+    #                              model=model, base_model=base_model, loss="binary_crossentropy",
+    #                              steps_per_epoch=800, epochs=1, optimizer=optimizer, verbose=1)
 
     print("Starting Top Training...")
-    optimizer = optimizers.SGD(momentum=0.8, nesterov=True)
+    optimizer = optimizers.SGD(lr=1e-2, momentum=1.0, nesterov=True)
 
     history = training.train_top(generator_train=training_generator, generator_val=validation_generator,
                                  model=model, base_model=base_model, loss="binary_crossentropy",
-                                 steps_per_epoch=160, epochs=50, optimizer=optimizer, verbose=1)
+                                 steps_per_epoch=800, epochs=50, optimizer=optimizer, verbose=1)
 
     accuracy_train = history.history['acc']
     loss_train = history.history['loss']
@@ -87,12 +94,11 @@ def main(GCP, job_dir):
     # print("Best F1:", F1[best_idx])
     # print("Best Thresholds:", thresholds[best_idx])
 
-
     #######################################
     #          Fine Tuning                #
     #######################################
     print("Starting Fine Tuning...")
-    optimizer = optimizers.SGD(lr=1e-7)
+    optimizer = optimizers.SGD(lr=1e-4, momentum=0.9, nesterov=True)
 
     history = training.fine_tune(generator_train=training_generator, generator_val=validation_generator,
                                  model=model, idx_lower=115, loss="binary_crossentropy",
@@ -121,15 +127,14 @@ def predict():
     global save_images
 
     # model_name = "./best_model_{}.h5".format(model_name)
-    model_name = "./model_epoch09.h5"
+    model_name = "../results/models/Xception_full_latest.h5"
 
     thresholds, _ = thresholding(model_name, model_class,
-                              datafile='../data/validation.json', data_path='../data/img/validation/')
+                                 datafile='../data/validation.json', data_path='../data/img/validation/')
 
     print("Setting up Test Generator")
-    validation_generator = MultiLabelGenerator(preprocessing_function=model_class, horizontal_flip=False)
-    validation_generator = validation_generator.make_datagenerator(
-        datafile='../data/test.json', test=True, shuffle=False, data_path='../data/img/test/', save_images=save_images)
+    test_generator = DataGenerator(
+        datafile='../data/test.json', test=True, shuffle=False, data_path='../data/img/test/')
 
     print("Setting up Model...")
     if os.path.isfile(model_name):
@@ -139,7 +144,7 @@ def predict():
         print("Model '{}' not found!".format(model_name))
         raise Exception("You need to train a model before you can make predictions.")
 
-    create_submission(validation_generator, model, steps=None, thresholds=thresholds)
+    create_submission(test_generator, model, steps=None, thresholds=thresholds)
 
 
 if __name__ == '__main__':
@@ -162,8 +167,8 @@ if __name__ == '__main__':
     if args.GCP and not args.job_dir:
         parser.error("--job-dir should be set if --GCP")
 
-    model_name = "xception_model"
-    model_class = xception_model
+    model_name = "inception_v3_model"
+    model_class = inception_v3_model
 
     save_images = True
     input_dim = (224, 224, 3)
