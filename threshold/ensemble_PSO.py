@@ -94,6 +94,20 @@ def PSO(predictions, y_true):
 
     return global_opt
 
+def ensemble_test_results(model_results, weights=None, mean_version='harm_mean'):
+    # Use weights and test data set results to ensemble.
+    if weights is not None:
+        # Weighted avg
+        return sum([model_prediction * weight for model_prediction, weight in zip(model_results, weights)])
+    else:
+        if mean_version == 'harm_mean':
+            # Calculate harmonic mean (only defined for positive real numbers).
+            return len(model_results) / np.sum([1.0 / res for res in model_results], axis=0)
+
+        else:
+            # Mean
+            return np.mean(model_results, axis=0)
+
 def main():
     """the best"""
     # 1. Find weights using validation results.
@@ -103,23 +117,10 @@ def main():
     # weights = [ 0.01, 0.99,]
     weights = PSO(predictions, y_true)
 
-    ensemble_loss = loss(predictions, y_true, weights)
-    ensemble_loss_harm = loss(predictions, y_true, mean_version='harm_mean')
-    ensemble_loss_mean = loss(predictions, y_true, mean_version='mean')
-    pred_loss = [loss(i, y_true) for i in predictions]
-
-    print('Ensemble loss weighted mean: {}'.format(ensemble_loss))
-    print('Ensemble loss harmonic mean: {}'.format(ensemble_loss_harm))
-    print('Ensemble loss normal mean: {}'.format(ensemble_loss_mean))
-
-    for i in range(len(pred_loss)):
-       print('Loss prediction {}: {}'.format(i, pred_loss[i]))
-    print(weights)
     # 2. Apply weights using test results.
-    #y_pred = ensemble_test_results(predictions, weights)
+    y_pred = ensemble_test_results(predictions, weights)
 
-    # 3. Export predictions and load them using the predictions function in main.py.
-    # DON't forget to also use the thresholds there.
+    np.save('./ensemble_results_PSO', y_pred)
 
 if __name__ == "__main__":
     main()
