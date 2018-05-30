@@ -39,7 +39,7 @@ def particle_optimization(particle, global_opt, local_opt, w, c_1, c_2, v_i):
 def PSO(predictions, y_true):
     w = .7298
     c_1 = c_2 = 1.49618
-    max_iter = 3500
+    max_iter = 2000
     n_particles = 15
 
     # Particles equals weights, init local and global opt.
@@ -80,15 +80,17 @@ def PSO(predictions, y_true):
             particles[j], v_i[j] = particle_optimization(particles[j], local_opt[j], global_opt, w, c_1, c_2,
                                                          v_i[j])
             # Normalize weights
+            particles[j][particles[j] < 0] = 0.0001
             particles[j] = particles[j] / np.sum(particles[j])
 
         # If global optimum hasn't changed for 1k iterations, then return global opt.
-        global_changed_cnt += 1
-        if global_changed_cnt >= 1000:
+        if global_changed_cnt >= 500:
             return global_opt
         elif global_changed_cnt == 0:
             print('Global optima: {}'.format(global_opt_fitness))
             print('Global optima weights: {}'.format(global_opt))
+        else:
+            global_changed_cnt += 1
 
 
     return global_opt
@@ -110,28 +112,42 @@ def ensemble_test_results(model_results, weights=None, mean_version='harm_mean')
 def main():
     """the best"""
     # 0. Average >100.000 <100.000
-    list_100k = ['y_pred_incept_higher_100000_model', 'y_pred_incept_lower_100000_model', 'Xception_occ100000', 'y_pred_incept_lower_100000_model']
-    y_pred_avg = np.mean([np.load('./val/{}'.format(i)) for i in list_100k])
+    # list_100k = ['y_pred_incept_higher_100000_model', 'y_pred_incept_lower_100000_model', 'Xception_occ100000', 'y_pred_incept_lower_100000_model']
+    # y_pred_avg = np.sum([np.load('./pre-ensemble/val/{}.npy'.format(i)) for i in list_100k], axis=0) / 2
+    #
+    # # 1. Find weights using validation results.
+    # list_models = ['y_pred_incept_all_final_wof1_model_epoch20', 'y_pred_incept_all_final_wof1_model_epoch29', 'y_pred_incept_all_model_best_24_may',
+    #                'Xception_full_latest', 'inception_v3_full']
+    #
+    # y_true = np.load('./pre-ensemble/val/y_true.npy')
+    # predictions = [np.load('./pre-ensemble/val/{}.npy'.format(i)) for i in list_models]
+    # predictions.append(y_pred_avg)
+    # predictions_test = 1
+    #
+    # # weights = [ 0.01, 0.99,]
+    # weights = PSO(predictions, y_true)
+    # np.save('./ensemble_results/weights/pso_weights', weights)
+    #
+    # # 2. Apply weights using test results.
+    # #y_pred = ensemble_test_results(predictions, weights)
+    # y_pred_v = ensemble_test_results(predictions, weights)
+    # print(weights)
+    # #np.save('./test/ensemble_results_harm_mean', y_pred_v)
+    # np.save('./ensemble_results/val/ensemble_results_PSO.npy', y_pred_v)
+    list_100k = ['y_pred_incept_higher_100000_model', 'y_pred_incept_lower_100000_model', 'Xception_occ100000',
+                 'y_pred_incept_lower_100000_model']
 
     # 1. Find weights using validation results.
-    list_models = ['y_pred_incept_all_final_wof1_model_epoch20', 'y_pred_incept_all_final_wof1_model_epoch29', 'y_pred_incept_all(24maybestsofar)',
-                   'Xception_full_latest']
+    list_models = ['y_pred_incept_all_final_wof1_model_epoch20', 'y_pred_incept_all_final_wof1_model_epoch29',
+                   'y_pred_incept_all_model_best_24_may', 'Xception_full_latest', 'inception_v3_full']
 
-    y_true = np.load('./val/y_true')
-    predictions = [np.load('./val/{}'.format(i)) for i in list_models]
-    predictions.append(y_pred_avg)
-    predictions_test = 1
+    y_pred_avg_test = np.sum([np.load('./pre-ensemble/test/{}.npy'.format(i)) for i in list_100k], axis=0) / 2
+    predictions_test = [np.load('./pre-ensemble/test/{}.npy'.format(i)) for i in list_models]
+    predictions_test.append(y_pred_avg_test)
 
-    # weights = [ 0.01, 0.99,]
-    weights = PSO(predictions, y_true)
-    np.save('./weights/pso_weights', weights)
-
-    # 2. Apply weights using test results.
-    #y_pred = ensemble_test_results(predictions, weights)
-    y_pred_v = ensemble_test_results(predictions, weights)
-
-    #np.save('./test/ensemble_results_harm_mean', y_pred_v)
-    np.save('./val/ensemble_results_PSO', y_pred_v)
+    weights = np.load('./ensemble_results/weights/pso_weights.npy')
+    result = sum([model_prediction * weight for model_prediction, weight in zip(predictions_test, weights)])
+    np.save('./ensemble_results/test/ensemble_results_PSO.npy', result)
 
 if __name__ == "__main__":
     main()

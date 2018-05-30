@@ -18,7 +18,7 @@ def create_submission(test_generator, model, thresholds=None, steps=None):
                                     verbose=1)
 
     np.save("preds.npy", preds)
-
+    #preds = np.load(test_generator)
     with open("submission.csv", "w") as f:
         f.write("image_id,label_id\n")
         for i, pred in enumerate(preds):
@@ -31,3 +31,6 @@ def create_submission(test_generator, model, thresholds=None, steps=None):
                 positive_samples_string = positive_samples_string + " " + str(positive_sample)
 
             f.write("{}, {}\n".format(i+1, positive_samples_string))
+
+#thresholds = np.load('../threshold/ensemble_results/thresholds/mean.npy')
+#create_submission('../threshold/ensemble_results/test/mean.npy', thresholds=thresholds)
