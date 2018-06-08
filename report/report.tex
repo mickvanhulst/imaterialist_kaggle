@@ -87,52 +87,74 @@
 		
 		It has to be noted that due to the gigantic disc size that was needed for the data we decided to download the images at 85\% of the available quality.
 		
-		\begin{table*}[t]
-			\centering
-			\begin{tabular}{l|c}
-				\toprule
-				\textbf{Method} & \textbf{F1-measure (micro-averaged)} \\
-				\midrule
-				Feature Based Approach v1 & 0.60   \\
-				Feature Based Approach v2 & 0.56 \\
-				Convolutional Neural Network & 0.49 \\
-				Vanilla LSTM & 0.52 \\
-				Bidirectional LSTM & 0.93 \\
-				\bottomrule
-			\end{tabular}
-			\caption{Summary of the achieved results, the F1-measure scores are computed using Kaggle.}
-			\label{table:summary_results}
-		\end{table*}
-		
-		
 		\section{Models}
-		During the project multiple approaches have been tried to come up with the final solution. First we implemented an Inception network and trained it on the training set to establish a baseline. After that we trained Inception on a subset of the training data to learn the labels that have more than 100.000 occurrences and on a subset to train the labels that have less than 100.000 occurrences. Besides that, we tried to create a model based on object detected features.
+		In contrast to the last project we decided to use pre-trained model for this challenge, instead of fully training the models ourselves. 
 		
-		For the loss of all models binary cross entropy is used, because the model has to output a probability for each label. Based on the probability thresholds are determined for each label on when the label actually is there and when not. So after applying the thresholds the output is a list with for the labels associated with an image an '1' and the labels not belonging for that image an '0'.
+		The models used in this project are pre-trained using ImageNet \cite{deng2009imagenet}. ImageNet is a collection of over 100.000 concepts with average 1000 images per concept. Also, ImageNet is often used as a reference data set for setting convolutional neural network benchmarks.
+		
+		For this project MobileNet, InceptionV3, Xception and ResNet50 are chosen because these model individually have a good performance for image classification problems. Therefore, we think that combining the models with ensemble learning methods will yield even better results. Besides the well-known models we created a model based on object detection.
+		
+		In this way we ensure that the data knows all the possible labels it has to predict and the relation between the target data and the labels. By using the pre-trained weights for the different models they are already aware of the high-level abstraction for images. These abstractions have proven to work well on image classification tasks \cite{razavian2014cnn}.
+		For fine-tuning the different models the last layers of each models are unfrozen. Unfreezing the last layers make it possible to train them on another data set. These partly unfrozen models are trained on the training data from the challenge.
+		
+		Because the data was imbalanced to train the models on three data sets. The first one consists of all available training data. The other two data sets are mutually exclusive subsets of the total data set. One contains only the labels that occur more than 100.000 times, while the other contains the labels that have less than 100.000 occurrences.
+		
+		For the loss of all models binary cross entropy is used, because the model has to output a probability for each label. To measure performance of the models a micro-averaged F1-score is used, because this also is the performance metric used by Kaggle. Hyper parameters are left as they were implemented by Keras.
 		
 		\subsection{Object detection}
-		For the object detection model we first predicted objects for each image using a pre-trained ResNet50 \cite{DBLP:journals/corr/HeZRS15} trained on the open image dataset \cite{openimages}. For each image we used the found objects as features for that image and used those features to train another neurel network. 
+		For the object detection model we first predicted objects for each image using a pre-trained ResNet50 \cite{DBLP:journals/corr/HeZRS15} trained on the open image data set \cite{openimages}. For each image we used the found objects as features for that image and used those features to train another neural network. 
 		
 		However, because the object detection network very often detected just a few objects. Because the object detection network resulted in very small features per image we found very early on that this network would not yield any noteworthy results. Therefore, this model has not been further developed.
 		
 		\subsection{ResNet50}
 		The ResNet we used is based on Keras' version \cite{DBLP:journals/corr/HeZRS15}, where the last layer was unfrozen and fine-tuned to our target data set. 
 		
-		TODO: MORE EXPLANATION + RESULTS
+		TODO: MORE EXPLANATION + RESULTS, ROEL HAS SUMBISSION
 		
 		\subsection{MobileNet}
 		MobileNet again is based on a version of Keras \cite{howard2017mobilenets}. In this case the last 5 layers are unfrozen and trained on the training images of this challenge.
 		
-		TODO: MORE EXPLANATION + RESULTS
+		TODO: MORE EXPLANATION + RESULTS, NOT SUBMITTED (At least with thresholds)
 		
 		\subsection{InceptionV3}
-		The InceptionV3 used in this research is based on the pre-trained network from Keras \cite{DBLP:journals/corr/SzegedyVISW15}. Here the last two layers where unfrozen and fine-tuned to the target images.
+		The InceptionV3 \cite{DBLP:journals/corr/SzegedyVISW15} is a convolutional neural network developed by Google. Inception has a very big difference with other conventional neural networks because of how their layers are build.
 		
-		TODO: MORE EXPLANATION + RESULTS
+		In most convolutional networks a decision has to be made for each layer in which you can either do 5x5, 3x3 or 1x1 convolutions, max-pooling. Inception refuses to make the choice for one layer above the other and decided to do everything within one layer. This architecture makes the network very time expensive to train because it is basically brute-forcing the different options that are available.
+		
+		TODO: RESULTS
+		
+		\subsection{Xception}
+		
+		
+		\section{Thresholding}
+		
+		TODO: HOW DID WE THRESHOLD
 		
 		\section{Ensembling}
 		
-		TODO: MORE EXPLANATION + RESULTS
+		The data set is highly imbalanced. To counteract this we decided to train two special classifiers. The first classifier is only trained on the labels that occur at least 100 000 times. The other classifier is trained on the remaining labels. These two classifier are combined into one classifier, by simply . The imbalance for both classifiers is lower than the imbalance for the total data set. 
+
+        We also trained multiple networks on all labels. We now want to combine these networks to give a single prediction on the test set. We will ensemble them with weighted soft voting. 
+
+        To calculate the weights we generate the predictions for the validation set, and then use an optimization algorithm to find the optimal weights on this set. We have implemented a simple hill climbing algorithm and also PSO (Particle Swarm Optimization) to calculate the weights. 
+
+        An interesting side effect of using this weighting algorithm is that we find which models work well, and which models don't work as well. 
+
+        Results for:
+
+        simple average
+        hill climbing
+        pso
+        harmonic mean
+
+        We can see that the results of the PSO algorithm are the most convincing. If we look at the weights that are generated by this strategy, we can see that the combined classifier is relatively important. This validates our idea that we could counteract the imbalance by training two seperate classifiers.
+
+
+        TODO: make a nice table of the ensembling results. And say something about these results.
+		
+		\section{Conclusion}
+		
+		TODO: WHAT CAN WE SAY?
 	
 		\section{Reflection}
 		This section briefly discusses some things that stood out during this project.
