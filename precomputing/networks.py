@@ -34,16 +34,17 @@ def custom_model(input_shape=(2048,), n_outputs=228, optimizer="SGD"):
     x = L.Dense(1024, activation='relu')(input)
     x = L.BatchNormalization()(x)
 
-    x = L.Dropout(0.5)(x)
-
     x = L.Dense(512, activation='relu')(x)
+    x = L.BatchNormalization()(x)
+
+    x = L.Dense(256, activation='relu')(x)
     x = L.BatchNormalization()(x)
 
     preds = L.Dense(n_outputs, activation='sigmoid')(x)
 
     model = Model(inputs=input, outputs=preds)
 
-    model.compile(optimizer=optimizer, loss="binary_crossentropy")
+    model.compile(optimizer=optimizer, loss="binary_crossentropy", metrics=["accuracy"])
 
     model.summary()
 
