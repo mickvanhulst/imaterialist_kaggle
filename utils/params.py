@@ -18,4 +18,4 @@ metrics = ["accuracy"]  # , 'categorical_accuracy']
 #################################
 
 n_classes = 228
-input_shape = (224, 224, 3)
+input_shape = (299, 299, 3)
