@@ -57,14 +57,18 @@ def download_image(pair):
     # check if the image is already there
     save_path = os.path.join(data_dir, str(ID) + ".jpg")
     if os.path.isfile(save_path):
-        return
+        try:
+            Image.open(save_path)
+            return
+        except Exception:
+            os.remove(save_path)
 
     try:
         response = http_pool.request("GET", url)
         image = Image.open(io.BytesIO(response.data))
         image = image.convert("RGB")
         if np.min(np.array(image)) > 180:  # Don't save images containing nothing
-            return
+           return
         image = pad_image(image)
         image.save(save_path, optimize=True)
     except Exception as e:
