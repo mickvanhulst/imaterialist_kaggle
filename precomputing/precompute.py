@@ -38,7 +38,7 @@ def create_all():
     """
     create_raw_preds(
         datafile="../data/train.json", data_path="../data/img_big/train/",
-        save_location="./raw_preds/Xception_train", steps=100
+        save_location="./raw_preds/Xception_train", steps=None
     )
     create_raw_preds(
         datafile="../data/validation.json", data_path="../data/img_big/validation/",
