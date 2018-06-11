@@ -119,28 +119,21 @@
 		As we had the suspicion that there was probably some relation between the labels, we thought it would be interesting to try an object detection algorithm. We tried predicting objects for each image using a pretrained ResNet50 \cite{DBLP:journals/corr/HeZRS15}. This network was trained on the open image data set \cite{openimages}. For each image we wanted to use the discovered objects as features for that image and use those images as features to train other neural networks. 
 		\\
 		\\
-		However, the object detection network didn't detect many objects and thus the resulting features were minimal (see Figure \ref{fig:object_detct} for an example. Furthermore, the model took around two minutes to detect objects in an image, meaning that we'd need around two million minutes to apply the model to the entire training set. As the results weren't promising, we didn't pursue this way of working any further.
-
-        % \begin{figure}[H]
-        %     \centering
-        %     \includegraphics[scale=.2]{img/object_detection_img.jpg}
-        %     \caption{Example image object detection}
-        %     \label{fig:object_detect}
-        % \end{figure}
+		The object detection network detected reasonable objects in some cases, but in the majority of the cases it detected objects such as 'clothing' which are meaningless within the iMaterialist challenge (see Figure \ref{fig:object_dress} and \ref{fig:object_necklace_clothing} for an example). Furthermore, the model took around two minutes to detect objects in an image, meaning that we'd need around two million minutes to apply the model to the entire training set. Due to these reasons, we decided to not pursue this method any further.
 		
-    	\begin{figure}
-      \begin{subfigure}[b]{0.4\columnwidth}
-        \includegraphics[width=\linewidth]{img/label24_examples.png}
-        \caption{Picture 1}
-        \label{fig:1}
-      \end{subfigure}
-      \hfill %%
-      \begin{subfigure}[b]{0.4\columnwidth}
-        \includegraphics[width=\linewidth]{img/label_24.jpg}
-        \caption{Picture 2}
-        \label{fig:2}
-      \end{subfigure}
-    \end{figure}
+    	\begin{figure}[H]
+          \begin{subfigure}[b]{0.3\columnwidth}
+            \includegraphics[width=\linewidth]{img/object_detection_img.jpg}
+            \caption{Object detection example 'dress'.}
+            \label{fig:object_dress}
+          \end{subfigure}
+          \hfill %%
+          \begin{subfigure}[b]{0.4\columnwidth}
+            \includegraphics[width=\linewidth]{img/t_shirt_object_detection.jpeg}
+            \caption{Object detection example 'necklace' and 'clothing'.}
+            \label{fig:object_necklace_clothing}
+          \end{subfigure}
+        \end{figure}
 		
 		
 		\subsection{ResNet50}
